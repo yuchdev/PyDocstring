@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import argparse
 import ast
+import re
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -20,6 +22,12 @@ class Edit:
     start: int
     end: int
     replacement: str
+
+
+@dataclass(frozen=True)
+class RewriteResult:
+    changed_files: int
+    renamed_files: int
 
 
 def _is_docstring_stmt(stmt: ast.stmt) -> bool:
@@ -106,22 +114,92 @@ def iter_python_files(path: Path) -> Iterable[Path]:
                 yield file_path
 
 
-def rewrite_paths(paths: list[Path], dry_run: bool = False) -> int:
-    changed = 0
+def _compile_rename_pattern(pattern: str) -> tuple[re.Pattern[str], int]:
+    token_regex = re.compile(r"\{(N+)\}")
+    matches = list(token_regex.finditer(pattern))
+    if len(matches) != 1:
+        raise ValueError("Rename pattern must contain exactly one numeric token like {NNN}.")
+
+    token_match = matches[0]
+    width = len(token_match.group(1))
+    return token_regex, width
+
+
+def _render_name(pattern: str, token_regex: re.Pattern[str], width: int, index: int) -> str:
+    formatted = str(index).zfill(width)
+    return token_regex.sub(formatted, pattern, count=1)
+
+
+def _build_rename_plan(files: list[Path], rename_pattern: str, start_index: int) -> list[tuple[Path, Path]]:
+    token_regex, width = _compile_rename_pattern(rename_pattern)
+    plan: list[tuple[Path, Path]] = []
+
+    for idx, original in enumerate(files, start=start_index):
+        target_name = _render_name(rename_pattern, token_regex, width, idx)
+        target_path = original.with_name(target_name)
+        if original != target_path:
+            plan.append((original, target_path))
+
+    destinations = [target for _, target in plan]
+    if len(destinations) != len(set(destinations)):
+        raise ValueError("Rename pattern generated duplicate destination file names.")
+
+    return plan
+
+
+def _apply_rename_plan(plan: list[tuple[Path, Path]], dry_run: bool) -> int:
+    if not plan:
+        return 0
+
+    if dry_run:
+        for old_path, new_path in plan:
+            print(f"would rename: {old_path} -> {new_path}")
+        return len(plan)
+
+    temp_mappings: list[tuple[Path, Path]] = []
+    for old_path, _ in plan:
+        temp_path = old_path.with_name(f".{old_path.name}.tmp-strip-{uuid.uuid4().hex}")
+        old_path.rename(temp_path)
+        temp_mappings.append((temp_path, old_path))
+
+    original_to_temp = {original: temp for temp, original in temp_mappings}
+
+    for old_path, new_path in plan:
+        original_to_temp[old_path].rename(new_path)
+        print(f"renamed: {old_path} -> {new_path}")
+
+    return len(plan)
+
+
+def rewrite_paths(
+    paths: list[Path],
+    dry_run: bool = False,
+    rename_pattern: str | None = None,
+    start_index: int = 1,
+) -> RewriteResult:
+    changed_files = 0
+    processed_files: list[Path] = []
+
     for target in paths:
         for py_file in iter_python_files(target):
+            processed_files.append(py_file)
             source = py_file.read_text(encoding="utf-8")
             rewritten = strip_function_bodies(source)
             if rewritten == source:
                 continue
-            changed += 1
+            changed_files += 1
             if dry_run:
                 print(f"would update: {py_file}")
                 continue
             py_file.write_text(rewritten, encoding="utf-8")
             print(f"updated: {py_file}")
 
-    return changed
+    renamed_files = 0
+    if rename_pattern is not None:
+        rename_plan = _build_rename_plan(processed_files, rename_pattern, start_index=start_index)
+        renamed_files = _apply_rename_plan(rename_plan, dry_run=dry_run)
+
+    return RewriteResult(changed_files=changed_files, renamed_files=renamed_files)
 
 
 def parse_args() -> argparse.Namespace:
@@ -142,16 +220,35 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Only print which files would be rewritten.",
     )
+    parser.add_argument(
+        "--rename-pattern",
+        help="Optional output name pattern, e.g. 'test_sphinx_doc_{NNN}.py'.",
+    )
+    parser.add_argument(
+        "--start-index",
+        type=int,
+        default=1,
+        help="Starting index for --rename-pattern numbering (default: 1).",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
-    changed = rewrite_paths(args.paths, dry_run=args.dry_run)
+    result = rewrite_paths(
+        args.paths,
+        dry_run=args.dry_run,
+        rename_pattern=args.rename_pattern,
+        start_index=args.start_index,
+    )
     if args.dry_run:
-        print(f"files that would change: {changed}")
+        print(f"files that would change: {result.changed_files}")
+        if args.rename_pattern is not None:
+            print(f"files that would be renamed: {result.renamed_files}")
     else:
-        print(f"files changed: {changed}")
+        print(f"files changed: {result.changed_files}")
+        if args.rename_pattern is not None:
+            print(f"files renamed: {result.renamed_files}")
     return 0
 
 

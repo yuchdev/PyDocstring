@@ -43,10 +43,35 @@ def test_rewrite_paths_updates_python_files(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    changed = strip_tool.rewrite_paths([tmp_path])
+    result = strip_tool.rewrite_paths([tmp_path])
 
     updated = py_file.read_text(encoding="utf-8")
-    assert changed == 1
+    assert result.changed_files == 1
+    assert result.renamed_files == 0
     assert "return 1" not in updated
     assert '"""Doc."""' in updated
     assert "pass" in updated
+
+
+def test_rewrite_paths_can_rename_files_by_pattern(tmp_path: Path) -> None:
+    alpha = tmp_path / "alpha.py"
+    beta = tmp_path / "beta.py"
+    alpha.write_text("def a():\n    return 1\n", encoding="utf-8")
+    beta.write_text("def b():\n    return 2\n", encoding="utf-8")
+
+    result = strip_tool.rewrite_paths(
+        [tmp_path],
+        rename_pattern="test_sphinx_doc_{NNN}.py",
+        start_index=7,
+    )
+
+    assert result.changed_files == 2
+    assert result.renamed_files == 2
+
+    renamed = sorted(p.name for p in tmp_path.glob("*.py"))
+    assert renamed == ["test_sphinx_doc_007.py", "test_sphinx_doc_008.py"]
+
+    for file_name in renamed:
+        content = (tmp_path / file_name).read_text(encoding="utf-8")
+        assert "return" not in content
+        assert "pass" in content
