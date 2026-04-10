@@ -17,7 +17,7 @@ spec.loader.exec_module(strip_tool)
 
 
 def test_strip_function_bodies_keeps_docstring_and_replaces_with_pass():
-    """[Unit] strip_function_bodies: strip_function_bodies preserves docstrings and replaces bodies with pass.
+    """[Unit] strip_tool: strip_function_bodies preserves docstrings and replaces bodies with pass.
 
     Scenario: Call strip_function_bodies on source with two functions containing docstrings and code.
     Boundaries: Function and method bodies with docstrings; code replaced by pass, docstrings kept.
@@ -46,7 +46,7 @@ class Service:
 
 
 def test_rewrite_paths_updates_python_files(tmp_path: Path):
-    """[Unit] strip_function_bodies: rewrite_paths rewrites Python files and reports changed count.
+    """[Unit] strip_tool: rewrite_paths rewrites Python files and reports changed count.
 
     Scenario: Call rewrite_paths on a directory containing one Python file with a body.
     Boundaries: Single .py file with a return statement; body replaced by pass, docstring kept.
@@ -69,7 +69,7 @@ def test_rewrite_paths_updates_python_files(tmp_path: Path):
 
 
 def test_rewrite_paths_can_rename_files_by_pattern(tmp_path: Path):
-    """[Unit] strip_function_bodies: rewrite_paths renames files according to the given pattern.
+    """[Unit] strip_tool: rewrite_paths renames files according to the given pattern.
 
     Scenario: Call rewrite_paths with a rename_pattern and start_index on a directory with two files.
     Boundaries: Two .py files; renamed to sequential pattern names; bodies stripped, renamed_files counted.
