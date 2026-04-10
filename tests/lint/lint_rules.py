@@ -1,3 +1,6 @@
+# AI-PROTECTED: DO NOT EDIT VIA AI.
+# This file contains core linting logic and must only be modified manually by a human developer.
+# Any automated or AI-assisted edits are strictly prohibited.
 from __future__ import annotations
 
 import ast
@@ -12,7 +15,6 @@ from typing import Iterable, List, Sequence, Optional
 # ---------------------------------------------------------------------------
 @dataclass
 class RuleViolation:
-    """Represents a custom lint rule violation with location and details."""
     filename: str
     lineno: int
     col_offset: int
@@ -22,16 +24,16 @@ class RuleViolation:
 
 def check_tree(tree: ast.AST, filename: str, source: Optional[str] = None) -> Iterable[RuleViolation]:
     """Run all custom checks on a parsed AST."""
-    yield from check_broad_exception(tree, filename, source)
-    yield from check_muted_exception(tree, filename, source)
-    yield from check_local_imports(tree, filename, source)
+    yield from check_bare_except(tree, filename)
+    yield from check_broad_except_exception(tree, filename)
+    yield from check_muted_exception(tree, filename)
     yield from check_docstrings(tree, filename, source)
+    yield from check_local_imports(tree, filename)
     yield from check_return_type_annotations(tree, filename)
     yield from check_no_none_return_annotations(tree, filename)
     yield from check_percent_formatting(tree, filename)
     yield from check_import_error_suppression(tree, filename)
     yield from check_union_none_annotations(tree, filename)
-
 
 def check_file(path: Path) -> List[RuleViolation]:
     """
@@ -51,7 +53,7 @@ def check_file(path: Path) -> List[RuleViolation]:
 # ---------------------------------------------------------------------------
 
 def _contains_exception(exc_node: ast.expr) -> bool:
-    """Return True if the exception type contains `Exception`."""
+    """Return True if the except type contains `Exception`."""
     # `except Exception:`
     if isinstance(exc_node, ast.Name) and exc_node.id == "Exception":
         return True
@@ -138,6 +140,151 @@ def _has_proper_docstring(node: ast.FunctionDef | ast.AsyncFunctionDef | ast.Cla
     return stripped.startswith('"""')
 
 
+def _is_test_module(tree: ast.AST, filename: str) -> bool:
+    """
+    Heuristically determine whether this module is a test module.
+
+    Criteria:
+        - File name starts with `test_` or ends with `_test.py`, OR
+        - Any parent directory is named `tests`, OR
+        - Module imports `pytest` or `unittest`.
+    """
+    path = Path(filename)
+    name = path.name
+
+    if name.startswith("test_") or name.endswith("_test.py"):
+        return True
+
+    if any(parent.name == "tests" for parent in path.parents):
+        return True
+
+    if _has_test_imports(tree):
+        return True
+
+    return False
+
+
+def _has_test_imports(tree: ast.AST) -> bool:
+    """Return True if module imports pytest or unittest."""
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                root = alias.name.split(".", 1)[0]
+                if root in ("pytest", "unittest"):
+                    return True
+        elif isinstance(node, ast.ImportFrom):
+            if node.module:
+                root = node.module.split(".", 1)[0]
+                if root in ("pytest", "unittest"):
+                    return True
+    return False
+
+
+def _iter_test_functions(tree: ast.AST) -> Iterable[ast.AST]:
+    """
+    Yield test case functions/methods:
+
+    - Top-level `def test_*` (pytest-style)
+    - Methods `def test_*` on classes whose name starts with `Test`
+      or which inherit from `unittest.TestCase`.
+    """
+
+    class _TestVisitor(ast.NodeVisitor):
+        """
+        AST visitor that identifies test case functions/methods.
+
+        Tracks class context and function nesting to distinguish top-level test
+        functions from nested helpers, collecting pytest/unittest test cases.
+        """
+
+        def __init__(self):
+            """Initialize a visitor with empty class stack, zero function depth, and empty test list."""
+            self._class_stack: List[ast.ClassDef] = []
+            self._function_depth = 0
+            self.test_functions: List[ast.AST] = []
+
+        def visit_ClassDef(self, node: ast.ClassDef):
+            """Visit a class definition, pushing it onto the stack for context tracking."""
+            self._class_stack.append(node)
+            self.generic_visit(node)
+            self._class_stack.pop()
+
+        def visit_FunctionDef(self, node: ast.FunctionDef):
+            """Visit a function definition, delegating to _visit_function for test detection."""
+            self._visit_function(node)
+
+        def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
+            """Visit an async function definition, delegating to _visit_function for test detection."""
+            self._visit_function(node)
+
+        def _visit_function(self, node: ast.AST):
+            """
+            Process a function/method node to detect if it's a test case.
+
+            Collects top-level test_* functions at module scope or within test classes,
+            while tracking nesting depth to exclude nested helper functions.
+            """
+            name = getattr(node, "name", "")
+            is_outermost = self._function_depth == 0
+
+            if is_outermost and name.startswith("test"):
+                if not self._class_stack:
+                    # Module-level pytest test
+                    self.test_functions.append(node)
+                else:
+                    current_class = self._class_stack[-1]
+                    if _is_test_class(current_class):
+                        self.test_functions.append(node)
+
+            self._function_depth += 1
+            self.generic_visit(node)
+            self._function_depth -= 1
+
+    visitor = _TestVisitor()
+    visitor.visit(tree)
+    return visitor.test_functions
+
+
+def _is_test_class(node: ast.ClassDef) -> bool:
+    """Heuristic: pytest test class or unittest.TestCase subclass."""
+    if node.name.startswith("Test"):
+        return True
+
+    for base in node.bases:
+        # class Foo(TestCase):
+        if isinstance(base, ast.Name) and base.id == "TestCase":
+            return True
+
+        # class Foo(unittest.TestCase):
+        if isinstance(base, ast.Attribute):
+            if isinstance(base.value, ast.Name) and base.value.id == "unittest":
+                if base.attr == "TestCase":
+                    return True
+
+    return False
+
+
+def _docstring_has_structured_header(doc: str) -> bool:
+    """Check first non-empty docstring line matches `[Type] summary` pattern with Type in {Unit, Integration, Mock, E2E}.
+
+    Only accept [Unit], [Integration], [Mock], or [E2E] headers for test docstrings.
+    """
+    test_docstring_header_re = re.compile(r"^\s*\[(Unit|Integration|Mock|E2E)]\s+\S.*$")
+    for line in doc.splitlines():
+        if not line.strip():
+            continue
+        return bool(test_docstring_header_re.match(line))
+    return False
+
+
+def _docstring_has_section(doc: str, section_name: str) -> bool:
+    """Return True if any line starts with the given section name."""
+    for line in doc.splitlines():
+        if line.strip().startswith(section_name):
+            return True
+    return False
+
+
 def _function_returns_value(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
     """
     Return True if this function/method has at least one `return` that
@@ -147,13 +294,10 @@ def _function_returns_value(node: ast.FunctionDef | ast.AsyncFunctionDef) -> boo
     """
 
     class _ReturnVisitor(ast.NodeVisitor):
-        """AST visitor that detects whether a function returns a value."""
         def __init__(self):
-            """Initialize the visitor with the returns_value flag set to False."""
             self.returns_value = False
 
         def visit_Return(self, ret: ast.Return):
-            """Visit the Return node and check if it returns a value."""
             # Anything with a value counts as "returns something"
             if ret.value is not None:
                 self.returns_value = True
@@ -187,7 +331,7 @@ def _function_returns_value(node: ast.FunctionDef | ast.AsyncFunctionDef) -> boo
 
 
 def _except_catches_import_error(handler: ast.ExceptHandler) -> bool:
-    """Return True if this exception handler catches ImportError / ModuleNotFoundError."""
+    """Return True if this except handler catches ImportError / ModuleNotFoundError."""
     exc = handler.type
     if exc is None:
         return False
@@ -209,7 +353,7 @@ def _except_catches_import_error(handler: ast.ExceptHandler) -> bool:
 
 def _except_handler_has_raise(handler: ast.ExceptHandler) -> bool:
     """
-    Return True if the `except` block contains any `raise` statement.
+    Return True if the except block contains any `raise` statement.
 
     We treat any raise in the handler body (even nested) as re-raising or
     propagating an error, so it's not considered suppression.
@@ -223,8 +367,8 @@ def _except_handler_has_raise(handler: ast.ExceptHandler) -> bool:
 
 def _is_union_with_none(ann: Optional[ast.expr]) -> bool:
     """
-    Return True if the annotation contains a PEP 604-style union with `None`
-    E.g. `Foo | None`, `None | Foo`, or wider unions that include None.
+    Return True if the annotation contains a PEP 604-style union with None,
+    e.g. `Foo | None`, `None | Foo`, or wider unions that include None.
     """
     if ann is None:
         return False
@@ -235,7 +379,7 @@ def _is_union_with_none(ann: Optional[ast.expr]) -> bool:
 
     for sub in ast.walk(ann):
         if isinstance(sub, ast.BinOp) and isinstance(sub.op, ast.BitOr):
-            # the presence of BitOr marks this as a union-like expression
+            # presence of BitOr marks this as a union-like expression
             found_other = True
 
         if _expr_is_none(sub):
@@ -279,11 +423,10 @@ def _expr_is_none(expr: Optional[ast.expr]) -> bool:
 # Linter rules
 # ---------------------------------------------------------------------------
 
-def check_broad_exception(tree: ast.AST, filename: str, source: Optional[str] = None) -> Iterable[RuleViolation]:
+def check_bare_except(tree: ast.AST, filename: str) -> Iterable[RuleViolation]:
     """
     Rule 01 (X001):
-
-    Forbid broad `except Exception:` and bare `except:`.
+    Forbid base `except:`
     """
     for node in ast.walk(tree):
         if not isinstance(node, ast.ExceptHandler):
@@ -298,6 +441,18 @@ def check_broad_exception(tree: ast.AST, filename: str, source: Optional[str] = 
                 "X001",
                 "Do not use bare `except:`; catch specific exceptions.",
             )
+
+
+def check_broad_except_exception(tree: ast.AST, filename: str) -> Iterable[RuleViolation]:
+    """
+    Rule 02 (X002):
+    Forbid broad `except Exception:`
+    """
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ExceptHandler):
+            continue
+
+        if node.type is None:
             continue
 
         # `except Exception:` or `except (Exception, ...)`
@@ -306,48 +461,14 @@ def check_broad_exception(tree: ast.AST, filename: str, source: Optional[str] = 
                 filename,
                 node.lineno,
                 node.col_offset,
-                "X001",
+                "X002",
                 "Do not use `except Exception:`; catch a more specific exception.",
             )
 
 
-def check_no_noqa_comments(tree: ast.AST, filename: str, source: Optional[str] = None) -> Iterable[RuleViolation]:
+def check_muted_exception(tree: ast.AST, filename: str) -> Iterable[RuleViolation]:
     """
-    Rule 02 (X002):
-
-    Forbid the use of `# noqa:` inline suppression comments, e.g.:
-
-        x = foo()  # noqa: X001
-
-    Instead of suppressing lint warnings, fix the underlying issue that
-    triggered the warning.
-    """
-    if source is None:
-        return
-
-    # Use 're' instead of literal string check to avoid self-violation
-    noqa_pattern = re.compile(r"#" + r" noqa:")
-
-    for lineno, line in enumerate(source.splitlines(), start=1):
-        match = noqa_pattern.search(line)
-        if match:
-            yield RuleViolation(
-                filename=filename,
-                lineno=lineno,
-                col_offset=match.start(),
-                code="X002",
-                message=(
-                    "Do not use inline suppression "
-                    "comments; fix the underlying issue instead."
-                ),
-            )
-
-
-def check_muted_exception(tree: ast.AST, filename: str, source: Optional[str] = None) -> Iterable[RuleViolation]:
-    """
-    Rule 03 (X003):
-
-    Forbid muted exception handlers.
+    Rule 03 (X003): forbid muted exception handlers.
 
     Any `except` block whose body consists only of "muting" statements:
         - pass
@@ -355,7 +476,7 @@ def check_muted_exception(tree: ast.AST, filename: str, source: Optional[str] = 
         - break
         - return (with or without a value)
         - an ellipsis literal (`...`)
-    is considered a violation (X004).
+    is considered a violation (X003).
     """
     for node in ast.walk(tree):
         if not isinstance(node, ast.ExceptHandler):
@@ -384,44 +505,132 @@ def check_muted_exception(tree: ast.AST, filename: str, source: Optional[str] = 
 
 def check_docstrings(tree: ast.AST, filename: str, source: Optional[str]) -> Iterable[RuleViolation]:
     """
-    Rule 4 (unified X004):
+    Rule 04 (unified X004):
 
-    Require a proper docstring as the first statement in every class /
-    function / method body.
+    - If the module is a *code module*:
+        Require a proper docstring as the first statement in every class /
+        function / method body.
+
+    - If the module is a *test module* (pytest/unittest or test_* heuristics):
+        - For test functions/methods: require a structured test docstring with:
+            * Header line: "[Type] component: behavior summary"
+              where Type ∈ {Unit, Integration, Mock, E2E}
+            * Sections: "Scenario:", "Boundaries:",
+              "On failure, first check:"
+        - For other functions/classes: require a generic docstring as above.
     """
     lines: Optional[Sequence[str]] = source.splitlines() if source is not None else None
+    is_test_module = _is_test_module(tree, filename)
 
     generic_message = (
         "Missing or improperly formatted docstring: add a coherent docstring "
         "block as the first statement in the body."
     )
 
-    for node in ast.walk(tree):
-        if not isinstance(
-            node,
-            (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef),
-        ):
-            continue
+    if is_test_module:
+        test_nodes = set(_iter_test_functions(tree))
 
-        if not _has_proper_docstring(node, lines):
-            yield RuleViolation(
-                filename,
-                node.lineno,
-                node.col_offset,
-                "X004",
-                generic_message,
-            )
+        for node in ast.walk(tree):
+            if not isinstance(
+                node,
+                (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef),
+            ):
+                continue
+
+            is_test_case = node in test_nodes
+
+            if is_test_case:
+                # For test cases: require structured test docstring.
+                if not _has_proper_docstring(node, lines):
+                    message = (
+                        "Missing or improperly formatted test docstring: "
+                        "add a structured docstring as the first statement, "
+                        "starting with a header line like "
+                        "'[Unit] component: behavior summary' (where type is "
+                        "one of [Unit, Integration, Mock, E2E]), followed by "
+                        "'Scenario:', 'Boundaries:', and "
+                        "'On failure, first check:' sections."
+                    )
+                    yield RuleViolation(
+                        filename,
+                        node.lineno,
+                        node.col_offset,
+                        "X004",
+                        message,
+                    )
+                    continue
+
+                raw_doc = ast.get_docstring(node, clean=False) or ""
+                missing_parts: List[str] = []
+
+                if not _docstring_has_structured_header(raw_doc):
+                    missing_parts.append(
+                        "header line like '[Unit] component: behavior summary'"
+                    )
+
+                for section in (
+                    "Scenario:",
+                    "Boundaries:",
+                    "On failure, first check:",
+                ):
+                    if not _docstring_has_section(raw_doc, section):
+                        missing_parts.append(f'"{section}" section')
+
+                if missing_parts:
+                    message = (
+                        "Missing or incomplete structured test docstring: "
+                        "test docstrings must start with a header line like "
+                        "'[Unit] component: behavior summary' (where type is "
+                        "one of [Unit, Integration, Mock, E2E]) and include "
+                        "'Scenario:', 'Boundaries:', and "
+                        "'On failure, first check:' sections. "
+                        "Missing parts: " + ", ".join(missing_parts) + "."
+                    )
+                    yield RuleViolation(
+                        filename,
+                        node.lineno,
+                        node.col_offset,
+                        "X004",
+                        message,
+                    )
+
+            else:
+                # Non-test helper or class in a test module: generic rule.
+                if not _has_proper_docstring(node, lines):
+                    yield RuleViolation(
+                        filename,
+                        node.lineno,
+                        node.col_offset,
+                        "X004",
+                        generic_message,
+                    )
+    else:
+        # Non-test module: generic rule for every class/function/method.
+        for node in ast.walk(tree):
+            if not isinstance(
+                node,
+                (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef),
+            ):
+                continue
+
+            if not _has_proper_docstring(node, lines):
+                yield RuleViolation(
+                    filename,
+                    node.lineno,
+                    node.col_offset,
+                    "X004",
+                    generic_message,
+                )
 
 
-def check_local_imports(tree: ast.AST, filename: str, source: Optional[str] = None) -> Iterable[RuleViolation]:
+def check_local_imports(tree: ast.AST, filename: str) -> Iterable[RuleViolation]:
     """
-    Rule 05 (X005):
-
-    Forbid imports inside function bodies (local imports).
+    Rule 05 (X005): forbid imports inside function bodies (local imports).
 
     Any `import ...` or `from ... import ...` statement that appears inside
     a function or method body is considered a violation (X005).
     """
+
     class _LocalImportVisitor(ast.NodeVisitor):
         """
         AST visitor that detects imports inside function/method bodies.
@@ -431,7 +640,7 @@ def check_local_imports(tree: ast.AST, filename: str, source: Optional[str] = No
         """
 
         def __init__(self):
-            """Initialize the visitor with zero function depth and an empty violations list."""
+            """Initialize the visitor with zero function depth and empty violations list."""
             self._function_depth = 0
             self.violations: List[RuleViolation] = []
 
@@ -482,14 +691,14 @@ def check_local_imports(tree: ast.AST, filename: str, source: Optional[str] = No
 
 def check_return_type_annotations(tree: ast.AST, filename: str) -> Iterable[RuleViolation]:
     """
-    Rule 6 (X006):
+    Rule 06 (X006):
 
     Every function or method that returns a value (has `return <expr>` in its
     own body) must declare an explicit return type annotation:
 
         def func(...) -> ReturnType:
 
-    We don't validate which type, only that some annotation is present.
+    We don't validate *which* type, only that some annotation is present.
     """
     for node in ast.walk(tree):
         if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -516,7 +725,7 @@ def check_return_type_annotations(tree: ast.AST, filename: str) -> Iterable[Rule
 
 def check_no_none_return_annotations(tree: ast.AST, filename: str) -> Iterable[RuleViolation]:
     """
-    Rule 7 (X007):
+    Rule 07 (X007):
 
     Never use an explicit `-> None` return annotation.
 
@@ -540,7 +749,7 @@ def check_no_none_return_annotations(tree: ast.AST, filename: str) -> Iterable[R
 
 def check_percent_formatting(tree: ast.AST, filename: str) -> Iterable[RuleViolation]:
     """
-    Rule 8 (X008):
+    Rule 08 (X008):
 
     Forbid old-style '%' string formatting such as:
 
@@ -560,10 +769,6 @@ def check_percent_formatting(tree: ast.AST, filename: str) -> Iterable[RuleViola
     percent_pattern = r"%(?:\(\w+\))?[-#0 +]*\d*(?:\.\d+)?[hlL]?[diouxXeEfFgGcrs]"
 
     def _has_percent_placeholders(s: str) -> bool:
-        """Check if a string contains percent-style placeholders."""
-        # Check if the string actually contains '%' before running regex
-        if "%" not in s:
-            return False
         return bool(re.search(percent_pattern, s))
 
     logging_methods = {
@@ -581,7 +786,7 @@ def check_percent_formatting(tree: ast.AST, filename: str) -> Iterable[RuleViola
         # Case 1: "%s" % value
         # ------------------------------------------------------------------
         if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mod):
-            fmt_value: Optional[str] = None
+            fmt_value: str | None = None
 
             if isinstance(node.left, ast.Constant) and isinstance(node.left.value, str):
                 fmt_value = node.left.value
@@ -622,7 +827,7 @@ def check_percent_formatting(tree: ast.AST, filename: str) -> Iterable[RuleViola
                 continue
 
             first_arg = node.args[0]
-            fmt_value: Optional[str] = None
+            fmt_value: str | None = None
 
             if isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str):
                 fmt_value = first_arg.value
@@ -650,7 +855,7 @@ def check_percent_formatting(tree: ast.AST, filename: str) -> Iterable[RuleViola
 
 def check_import_error_suppression(tree: ast.AST, filename: str) -> Iterable[RuleViolation]:
     """
-    Rule 9 (X009):
+    Rule 09 (X009):
 
     Forbid suppressing ImportError / ModuleNotFoundError via try/except, e.g.:
 
@@ -702,7 +907,6 @@ def check_union_none_annotations(tree: ast.AST, filename: str,) -> Iterable[Rule
     """
 
     def _report(union_node: ast.AST) -> RuleViolation:
-        """Create a RuleViolation for a union type annotation with None."""
         return RuleViolation(
             filename=filename,
             lineno=getattr(union_node, "lineno", 1),

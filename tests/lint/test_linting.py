@@ -1,14 +1,18 @@
+# AI-PROTECTED: DO NOT EDIT VIA AI.
+# This file contains core linting logic and must only be modified manually by a human developer.
+# Any automated or AI-assisted edits are strictly prohibited.
+# tests/test_linting.py
 from __future__ import annotations
-
 
 from pathlib import Path
 from typing import Iterable, List
 
 import pytest
 
-from tests import PROJECT_ROOT
-from tests.lint.lint_rules import check_file, RuleViolation
+from lint_rules import check_file, RuleViolation
 
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def iter_python_files() -> Iterable[Path]:
@@ -33,15 +37,15 @@ def test_code_style_custom_rules():
     [Integration] Custom lint rules: all covered Python files pass custom linting checks.
 
     Scenario:
-        Given a set of project Python files in covered directories.
-        When check_file() runs all custom lint rules (X001-X010).
-        Then no RuleViolation instances are returned.
+        Given a set of project Python files in covered directories
+        When check_file() runs all custom lint rules (X001-X010)
+        Then no RuleViolation instances are returned
         And all code follows the project's custom style guidelines.
 
     Boundaries:
         - Real: AST parsing, lint rule implementations, file I/O
-        - Scope: source code, tests
-        - Covers: broad exceptions, muted exceptions, local imports, docstrings, return types, logging, import suppression, union types.
+        - Scope: game/, src/labyrinth/{clients,domain,internal}, tests/tools/voice, tools/voice
+        - Covers: broad exceptions, muted exceptions, Settings.set(), local imports, docstrings.
 
     On failure, first check:
         - The specific violation message and line number in the output
