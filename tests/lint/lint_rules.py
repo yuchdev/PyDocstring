@@ -15,6 +15,8 @@ from typing import Iterable, List, Sequence, Optional
 # ---------------------------------------------------------------------------
 @dataclass
 class RuleViolation:
+    """Represents a single lint rule violation with file location and message details."""
+
     filename: str
     lineno: int
     col_offset: int
@@ -294,10 +296,14 @@ def _function_returns_value(node: ast.FunctionDef | ast.AsyncFunctionDef) -> boo
     """
 
     class _ReturnVisitor(ast.NodeVisitor):
+        """AST visitor that detects whether a function contains a value-returning return statement."""
+
         def __init__(self):
+            """Initialize the visitor with returns_value set to False."""
             self.returns_value = False
 
         def visit_Return(self, ret: ast.Return):
+            """Record that a non-bare return statement was found."""
             # Anything with a value counts as "returns something"
             if ret.value is not None:
                 self.returns_value = True
@@ -769,6 +775,7 @@ def check_percent_formatting(tree: ast.AST, filename: str) -> Iterable[RuleViola
     percent_pattern = r"%(?:\(\w+\))?[-#0 +]*\d*(?:\.\d+)?[hlL]?[diouxXeEfFgGcrs]"
 
     def _has_percent_placeholders(s: str) -> bool:
+        """Return True if s contains any printf-style percent placeholder sequences."""
         return bool(re.search(percent_pattern, s))
 
     logging_methods = {
@@ -786,7 +793,7 @@ def check_percent_formatting(tree: ast.AST, filename: str) -> Iterable[RuleViola
         # Case 1: "%s" % value
         # ------------------------------------------------------------------
         if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mod):
-            fmt_value: str | None = None
+            fmt_value: Optional[str] = None
 
             if isinstance(node.left, ast.Constant) and isinstance(node.left.value, str):
                 fmt_value = node.left.value
@@ -827,7 +834,7 @@ def check_percent_formatting(tree: ast.AST, filename: str) -> Iterable[RuleViola
                 continue
 
             first_arg = node.args[0]
-            fmt_value: str | None = None
+            fmt_value: Optional[str] = None
 
             if isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str):
                 fmt_value = first_arg.value
@@ -907,6 +914,7 @@ def check_union_none_annotations(tree: ast.AST, filename: str,) -> Iterable[Rule
     """
 
     def _report(union_node: ast.AST) -> RuleViolation:
+        """Build an X010 RuleViolation for the given union-with-None annotation node."""
         return RuleViolation(
             filename=filename,
             lineno=getattr(union_node, "lineno", 1),

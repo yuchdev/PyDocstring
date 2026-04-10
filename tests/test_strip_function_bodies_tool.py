@@ -17,7 +17,12 @@ spec.loader.exec_module(strip_tool)
 
 
 def test_strip_function_bodies_keeps_docstring_and_replaces_with_pass():
-    """Test that function bodies are stripped while preserving docstrings."""
+    """[Unit] strip_function_bodies: strip_function_bodies preserves docstrings and replaces bodies with pass.
+
+    Scenario: Call strip_function_bodies on source with two functions containing docstrings and code.
+    Boundaries: Function and method bodies with docstrings; code replaced by pass, docstrings kept.
+    On failure, first check: strip_function_bodies docstring detection and body replacement logic.
+    """
     source = '''
 def foo(a, b):
     """Compute something."""
@@ -41,7 +46,12 @@ class Service:
 
 
 def test_rewrite_paths_updates_python_files(tmp_path: Path):
-    """Test that rewrite_paths rewrites Python files in a directory."""
+    """[Unit] strip_function_bodies: rewrite_paths rewrites Python files and reports changed count.
+
+    Scenario: Call rewrite_paths on a directory containing one Python file with a body.
+    Boundaries: Single .py file with a return statement; body replaced by pass, docstring kept.
+    On failure, first check: rewrite_paths file discovery, strip_function_bodies, and changed_files count.
+    """
     py_file = tmp_path / "sample.py"
     py_file.write_text(
         "def f():\n    \"\"\"Doc.\"\"\"\n    return 1\n",
@@ -59,7 +69,12 @@ def test_rewrite_paths_updates_python_files(tmp_path: Path):
 
 
 def test_rewrite_paths_can_rename_files_by_pattern(tmp_path: Path):
-    """Test that rewrite_paths renames files according to the given pattern."""
+    """[Unit] strip_function_bodies: rewrite_paths renames files according to the given pattern.
+
+    Scenario: Call rewrite_paths with a rename_pattern and start_index on a directory with two files.
+    Boundaries: Two .py files; renamed to sequential pattern names; bodies stripped, renamed_files counted.
+    On failure, first check: rewrite_paths rename_pattern substitution and file rename logic.
+    """
     alpha = tmp_path / "alpha.py"
     beta = tmp_path / "beta.py"
     alpha.write_text("def a():\n    return 1\n", encoding="utf-8")
