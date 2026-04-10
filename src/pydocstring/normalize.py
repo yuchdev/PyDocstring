@@ -59,4 +59,3 @@ def strip_docstring_quotes(docstring_node_value: str) -> str:
 def wrap_docstring_quotes(text: str, quote_char: str = '"""') -> str:
     """Wrap text in triple quotes."""
     return f"{quote_char}{text}{quote_char}"
-
