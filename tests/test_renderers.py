@@ -1,11 +1,24 @@
 """Tests for Google and Sphinx renderers."""
+
 from pydocstring.renderer_google import render_google
 from pydocstring.renderer_sphinx import render_sphinx
-from pydocstring.models import ParsedDocstring, ParamDoc, RaisesDoc, ReturnsDoc, YieldsDoc, SectionDoc
+from pydocstring.models import (
+    ParsedDocstring,
+    ParamDoc,
+    RaisesDoc,
+    ReturnsDoc,
+    YieldsDoc,
+    SectionDoc,
+)
 
 
 def make_doc() -> ParsedDocstring:
-    """Build a sample ParsedDocstring for renderer tests."""
+    """[Unit] renderers: build a sample ParsedDocstring fixture for renderer tests.
+
+    Scenario: Construct a ParsedDocstring with params, returns, and raises for use in renderer tests.
+    Boundaries: Two params (int, str), one returns (bool), one raises (ValueError).
+    On failure, first check: ParsedDocstring, ParamDoc, ReturnsDoc, and RaisesDoc constructors.
+    """
     return ParsedDocstring(
         summary="Do something.",
         params=[
@@ -18,14 +31,24 @@ def make_doc() -> ParsedDocstring:
 
 
 def test_render_google_summary():
-    """Test rendering a docstring with only a summary line."""
+    """[Unit] renderers: render_google renders a summary-only ParsedDocstring correctly.
+
+    Scenario: Call render_google with a ParsedDocstring containing only a summary line.
+    Boundaries: Single summary string; no params, returns, or raises.
+    On failure, first check: render_google summary-only rendering logic.
+    """
     doc = ParsedDocstring(summary="Do something.")
     result = render_google(doc)
     assert result == "Do something."
 
 
 def test_render_google_params():
-    """Test rendering the Args section in Google style."""
+    """[Unit] renderers: render_google renders the Args section with typed parameters.
+
+    Scenario: Call render_google with a ParsedDocstring containing two typed parameters.
+    Boundaries: Two params with name, type, and description; Args section must appear in output.
+    On failure, first check: render_google Args section formatting logic.
+    """
     doc = make_doc()
     result = render_google(doc)
     assert "Args:" in result
@@ -34,7 +57,12 @@ def test_render_google_params():
 
 
 def test_render_google_returns():
-    """Test rendering the Returns section in Google style."""
+    """[Unit] renderers: render_google renders the Returns section in Google style.
+
+    Scenario: Call render_google with a ParsedDocstring containing a returns entry.
+    Boundaries: Returns entry with type and description; Returns section must appear in output.
+    On failure, first check: render_google Returns section formatting logic.
+    """
     doc = make_doc()
     result = render_google(doc)
     assert "Returns:" in result
@@ -42,7 +70,12 @@ def test_render_google_returns():
 
 
 def test_render_google_raises():
-    """Test rendering the Raises section in Google style."""
+    """[Unit] renderers: render_google renders the Raises section in Google style.
+
+    Scenario: Call render_google with a ParsedDocstring containing a raises entry.
+    Boundaries: Single raises entry with exception type and description; Raises section must appear.
+    On failure, first check: render_google Raises section formatting logic.
+    """
     doc = make_doc()
     result = render_google(doc)
     assert "Raises:" in result
@@ -50,7 +83,12 @@ def test_render_google_raises():
 
 
 def test_render_sphinx_params():
-    """Test rendering :param and :type fields in Sphinx style."""
+    """[Unit] renderers: render_sphinx renders :param and :type fields for typed parameters.
+
+    Scenario: Call render_sphinx with a ParsedDocstring containing two typed parameters.
+    Boundaries: Two params with name, type, and description; :param and :type fields must appear.
+    On failure, first check: render_sphinx :param and :type field rendering logic.
+    """
     doc = make_doc()
     result = render_sphinx(doc)
     assert ":param x: A number." in result
@@ -59,7 +97,12 @@ def test_render_sphinx_params():
 
 
 def test_render_sphinx_returns():
-    """Test rendering :returns and :rtype fields in Sphinx style."""
+    """[Unit] renderers: render_sphinx renders :returns and :rtype fields.
+
+    Scenario: Call render_sphinx with a ParsedDocstring containing a returns entry with type.
+    Boundaries: Returns entry with type annotation and description; :returns and :rtype must appear.
+    On failure, first check: render_sphinx :returns and :rtype rendering logic.
+    """
     doc = make_doc()
     result = render_sphinx(doc)
     assert ":returns: True if successful." in result
@@ -67,14 +110,24 @@ def test_render_sphinx_returns():
 
 
 def test_render_sphinx_raises():
-    """Test rendering :raises fields in Sphinx style."""
+    """[Unit] renderers: render_sphinx renders :raises fields for exception entries.
+
+    Scenario: Call render_sphinx with a ParsedDocstring containing a raises entry.
+    Boundaries: Single raises entry with exception type and description; :raises field must appear.
+    On failure, first check: render_sphinx :raises field rendering logic.
+    """
     doc = make_doc()
     result = render_sphinx(doc)
     assert ":raises ValueError: If value is wrong." in result
 
 
 def test_render_google_no_type():
-    """Test rendering a param with no type annotation in Google style."""
+    """[Unit] renderers: render_google renders a param with no type annotation in Google style.
+
+    Scenario: Call render_google with a param that has no type_annotation set.
+    Boundaries: Single param without type; output uses 'x: description' format (no parentheses).
+    On failure, first check: render_google param rendering logic for params without type annotations.
+    """
     doc = ParsedDocstring(
         summary="Do something.",
         params=[ParamDoc(name="x", description="A number.")],
@@ -84,7 +137,12 @@ def test_render_google_no_type():
 
 
 def test_render_sphinx_no_type():
-    """Test rendering a param with no type annotation in Sphinx style."""
+    """[Unit] renderers: render_sphinx renders a param with no type annotation without :type field.
+
+    Scenario: Call render_sphinx with a param that has no type_annotation set.
+    Boundaries: Single param without type; :param field appears but :type field must not appear.
+    On failure, first check: render_sphinx conditional :type field rendering logic.
+    """
     doc = ParsedDocstring(
         summary="Do something.",
         params=[ParamDoc(name="x", description="A number.")],
@@ -95,7 +153,12 @@ def test_render_sphinx_no_type():
 
 
 def test_render_google_extended_desc():
-    """Test rendering Google docstring with extended description."""
+    """[Unit] renderers: render_google renders extended description after the summary line.
+
+    Scenario: Call render_google with a ParsedDocstring containing both summary and extended_description.
+    Boundaries: Summary and extended description present; both must appear in rendered output.
+    On failure, first check: render_google extended description inclusion and ordering logic.
+    """
     doc = ParsedDocstring(
         summary="Do something.",
         extended_description="More details here.",
@@ -106,17 +169,27 @@ def test_render_google_extended_desc():
 
 
 def test_render_sphinx_no_blank_before_fields_when_no_summary():
-    """Test that Sphinx renderer does not add a leading blank line when there is no summary."""
+    """[Unit] renderers: render_sphinx does not add a leading blank line when there is no summary.
+
+    Scenario: Call render_sphinx with a ParsedDocstring that has no summary, only params.
+    Boundaries: Empty summary; output must not start with a blank line.
+    On failure, first check: render_sphinx leading blank line logic when summary is absent.
+    """
     doc = ParsedDocstring(
         params=[ParamDoc(name="x", description="A number.")],
     )
     result = render_sphinx(doc)
     # Should not start with blank line
-    assert not result.startswith('\n')
+    assert not result.startswith("\n")
 
 
 def test_render_google_yields():
-    """Test rendering a Yields section in Google style."""
+    """[Unit] renderers: render_google renders the Yields section with type and description.
+
+    Scenario: Call render_google with a ParsedDocstring containing a yields entry.
+    Boundaries: Yields entry with type annotation and description; Yields section must appear.
+    On failure, first check: render_google Yields section formatting logic.
+    """
     doc = ParsedDocstring(
         summary="Generate values.",
         yields=YieldsDoc(type_annotation="int", description="A number."),
@@ -127,7 +200,12 @@ def test_render_google_yields():
 
 
 def test_render_sphinx_yields():
-    """Test rendering a :yields field in Sphinx style."""
+    """[Unit] renderers: render_sphinx renders a :yields field with description.
+
+    Scenario: Call render_sphinx with a ParsedDocstring containing a yields entry with description only.
+    Boundaries: Yields entry with no type annotation; :yields field must appear in output.
+    On failure, first check: render_sphinx :yields field rendering logic.
+    """
     doc = ParsedDocstring(
         summary="Generate values.",
         yields=YieldsDoc(description="A number."),
@@ -137,7 +215,12 @@ def test_render_sphinx_yields():
 
 
 def test_render_google_custom_section():
-    """Test rendering a custom section (e.g. Examples) in Google style."""
+    """[Unit] renderers: render_google renders a custom section (e.g. Examples) in Google style.
+
+    Scenario: Call render_google with a ParsedDocstring containing a custom 'Examples' section.
+    Boundaries: Single custom section with title and content; Examples header must appear in output.
+    On failure, first check: render_google custom section formatting logic.
+    """
     doc = ParsedDocstring(
         summary="Do something.",
         custom_sections=[SectionDoc(title="Examples", content=">>> foo(1)\n2")],
@@ -148,7 +231,12 @@ def test_render_google_custom_section():
 
 
 def test_render_sphinx_custom_section():
-    """Test rendering a custom section (e.g. Examples) in Sphinx style."""
+    """[Unit] renderers: render_sphinx renders a custom section (e.g. Examples) in Sphinx style.
+
+    Scenario: Call render_sphinx with a ParsedDocstring containing a custom 'Examples' section.
+    Boundaries: Single custom section with title and content; Examples header must appear in output.
+    On failure, first check: render_sphinx custom section formatting logic.
+    """
     doc = ParsedDocstring(
         summary="Do something.",
         custom_sections=[SectionDoc(title="Examples", content=">>> foo(1)\n2")],

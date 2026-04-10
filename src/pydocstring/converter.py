@@ -1,19 +1,26 @@
 """High-level conversion API."""
+
 from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 from pydocstring.models import (
-    DocstringStyle, FileConversionResult, ProjectConversionResult,
+    DocstringStyle,
+    FileConversionResult,
+    ProjectConversionResult,
     StyleDetectionResult,
 )
 from pydocstring.detector import detect_style
 from pydocstring.rewriter import rewrite_source
-from pydocstring.project_scanner import scan_project, detect_file_encoding, detect_file_newline
+from pydocstring.project_scanner import (
+    scan_project,
+    detect_file_encoding,
+    detect_file_newline,
+)
 
 
 def _parse_style(style_str: Optional[str]) -> Optional[DocstringStyle]:
     """Parse a style string into a DocstringStyle enum value."""
-    if style_str is None or style_str == 'auto':
+    if style_str is None or style_str == "auto":
         return None
     return DocstringStyle(style_str.lower())
 
@@ -26,21 +33,21 @@ def detect_docstring_style(text: str) -> StyleDetectionResult:
 def convert_file(
     path: Path,
     target_style: str,
-    source_style: str = None,
+    source_style: Optional[str] = None,
     dry_run: bool = False,
 ) -> FileConversionResult:
     """Convert docstrings in a single file."""
     result = FileConversionResult(path=path)
 
     try:
-        encoding = 'utf-8'
+        encoding = "utf-8"
         try:
             encoding = detect_file_encoding(path)
-            newline = detect_file_newline(path)
+            detect_file_newline(path)
         except OSError:
-            newline = '\n'
+            pass
 
-        with open(path, encoding=encoding, errors='replace', newline='') as f:
+        with open(path, encoding=encoding, errors="replace", newline="") as f:
             source = f.read()
 
         result.original_source = source
@@ -48,7 +55,7 @@ def convert_file(
         target = DocstringStyle(target_style.lower())
         source_style_enum = _parse_style(source_style)
 
-        warnings = []
+        warnings: list[str] = []
         converted = rewrite_source(
             source,
             target_style=target,
@@ -60,7 +67,7 @@ def convert_file(
         result.changed = converted != source
 
         if result.changed and not dry_run:
-            with open(path, 'w', encoding=encoding, newline='') as f:
+            with open(path, "w", encoding=encoding, newline="") as f:
                 f.write(converted)
 
     except (OSError, SyntaxError, ValueError) as e:
@@ -72,9 +79,9 @@ def convert_file(
 def convert_project(
     root: Path,
     target_style: str,
-    source_style: str = None,
-    include_globs: list[str] = None,
-    exclude_globs: list[str] = None,
+    source_style: Optional[str] = None,
+    include_globs: Optional[list[str]] = None,
+    exclude_globs: Optional[list[str]] = None,
     dry_run: bool = False,
 ) -> ProjectConversionResult:
     """Convert docstrings in an entire project."""

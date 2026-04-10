@@ -20,7 +20,7 @@ def iter_python_files() -> Iterable[Path]:
     covered_dirs = [
         PROJECT_ROOT / "src",
         PROJECT_ROOT / "tests",
-        PROJECT_ROOT / "tests" / "lint"
+        PROJECT_ROOT / "tests" / "lint",
     ]
     for dir_path in covered_dirs:
         if not dir_path.is_dir():

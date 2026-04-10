@@ -1,23 +1,44 @@
 """Parse Sphinx-style docstrings into ParsedDocstring."""
+
 from __future__ import annotations
 import re
 from typing import Optional
 from pydocstring.models import (
-    ParsedDocstring, ParamDoc, RaisesDoc, ReturnsDoc, YieldsDoc,
-    SectionDoc, DocstringStyle,
+    ParsedDocstring,
+    ParamDoc,
+    RaisesDoc,
+    ReturnsDoc,
+    YieldsDoc,
+    DocstringStyle,
 )
 from pydocstring.parser_google import _parse_section
 
-FIELD_RE = re.compile(r'^\s*:(\w+)(?:\s+(\S+(?:\s+\S+)*?))?:\s*(.*)')
+FIELD_RE = re.compile(r"^\s*:(\w+)(?:\s+(\S+(?:\s+\S+)*?))?:\s*(.*)")
 
-SIMPLE_FIELD_RE = re.compile(r'^\s*:(returns?|rtype|yields?):\s*(.*)')
+SIMPLE_FIELD_RE = re.compile(r"^\s*:(returns?|rtype|yields?):\s*(.*)")
 
-GOOGLE_SECTION_RE = re.compile(r'^(\s*)([A-Z][a-zA-Z ]*?):\s*$')
+GOOGLE_SECTION_RE = re.compile(r"^(\s*)([A-Z][a-zA-Z ]*?):\s*$")
 
 GOOGLE_SECTION_HEADERS = {
-    'Args', 'Arguments', 'Parameters', 'Returns', 'Return', 'Yields', 'Yield',
-    'Raises', 'Raise', 'Note', 'Notes', 'Example', 'Examples', 'Warning',
-    'Warnings', 'Todo', 'See Also', 'References', 'Attributes',
+    "Args",
+    "Arguments",
+    "Parameters",
+    "Returns",
+    "Return",
+    "Yields",
+    "Yield",
+    "Raises",
+    "Raise",
+    "Note",
+    "Notes",
+    "Example",
+    "Examples",
+    "Warning",
+    "Warnings",
+    "Todo",
+    "See Also",
+    "References",
+    "Attributes",
 }
 
 
@@ -33,7 +54,7 @@ def parse_sphinx(text: str) -> ParsedDocstring:
     if not text.strip():
         return doc
 
-    lines = text.split('\n')
+    lines = text.split("\n")
 
     pre_field_lines = []
     field_lines = []
@@ -45,7 +66,10 @@ def parse_sphinx(text: str) -> ParsedDocstring:
             if FIELD_RE.match(line) or SIMPLE_FIELD_RE.match(line):
                 in_fields = True
                 field_lines.append(line)
-            elif GOOGLE_SECTION_RE.match(line) and stripped.rstrip(':') in GOOGLE_SECTION_HEADERS:
+            elif (
+                GOOGLE_SECTION_RE.match(line)
+                and stripped.rstrip(":") in GOOGLE_SECTION_HEADERS
+            ):
                 in_fields = True
                 field_lines.append(line)
             else:
@@ -81,7 +105,7 @@ def _parse_pre_field(lines: list[str], doc: ParsedDocstring):
         else:
             summary_lines.append(line.strip())
 
-    doc.summary = ' '.join(summary_lines).strip()
+    doc.summary = " ".join(summary_lines).strip()
 
     if rest_lines:
         while rest_lines and not rest_lines[0].strip():
@@ -89,7 +113,7 @@ def _parse_pre_field(lines: list[str], doc: ParsedDocstring):
         while rest_lines and not rest_lines[-1].strip():
             rest_lines.pop()
         if rest_lines:
-            doc.extended_description = '\n'.join(l.strip() for l in rest_lines)
+            doc.extended_description = "\n".join(ln.strip() for ln in rest_lines)
 
 
 def _parse_fields(lines: list[str], doc: ParsedDocstring):
@@ -97,15 +121,15 @@ def _parse_fields(lines: list[str], doc: ParsedDocstring):
     if not lines:
         return
 
-    fields = []
-    google_sections = []
+    fields: list[tuple[str, Optional[str], list[str]]] = []
+    google_sections: list[tuple[str, list[str]]] = []
 
-    current_field_key = None
-    current_field_arg = None
-    current_content_lines = []
+    current_field_key: Optional[str] = None
+    current_field_arg: Optional[str] = None
+    current_content_lines: list[str] = []
     in_google_section = False
-    current_google_title = None
-    current_google_body = []
+    current_google_title: Optional[str] = None
+    current_google_body: list[str] = []
 
     for line in lines:
         stripped = line.strip()
@@ -113,12 +137,15 @@ def _parse_fields(lines: list[str], doc: ParsedDocstring):
         m = FIELD_RE.match(line)
         if m:
             if in_google_section:
-                google_sections.append((current_google_title, current_google_body))
+                if current_google_title is not None:
+                    google_sections.append((current_google_title, current_google_body))
                 in_google_section = False
                 current_google_title = None
                 current_google_body = []
             elif current_field_key is not None:
-                fields.append((current_field_key, current_field_arg, current_content_lines))
+                fields.append(
+                    (current_field_key, current_field_arg, current_content_lines)
+                )
 
             current_field_key = m.group(1)
             current_field_arg = m.group(2)
@@ -129,9 +156,12 @@ def _parse_fields(lines: list[str], doc: ParsedDocstring):
         gm = GOOGLE_SECTION_RE.match(line)
         if gm and gm.group(2).strip() in GOOGLE_SECTION_HEADERS:
             if in_google_section:
-                google_sections.append((current_google_title, current_google_body))
+                if current_google_title is not None:
+                    google_sections.append((current_google_title, current_google_body))
             elif current_field_key is not None:
-                fields.append((current_field_key, current_field_arg, current_content_lines))
+                fields.append(
+                    (current_field_key, current_field_arg, current_content_lines)
+                )
                 current_field_key = None
                 current_field_arg = None
                 current_content_lines = []
@@ -147,7 +177,8 @@ def _parse_fields(lines: list[str], doc: ParsedDocstring):
             current_content_lines.append(stripped)
 
     if in_google_section:
-        google_sections.append((current_google_title, current_google_body))
+        if current_google_title is not None:
+            google_sections.append((current_google_title, current_google_body))
     elif current_field_key is not None:
         fields.append((current_field_key, current_field_arg, current_content_lines))
 
@@ -155,12 +186,12 @@ def _parse_fields(lines: list[str], doc: ParsedDocstring):
     rtype = None
 
     for key, arg, content_lines in fields:
-        content = ' '.join(content_lines).strip()
+        content = " ".join(content_lines).strip()
         key_lower = key.lower()
 
-        if key_lower == 'type' and arg:
+        if key_lower == "type" and arg:
             type_map[arg] = content
-        elif key_lower == 'rtype':
+        elif key_lower == "rtype":
             rtype = content
 
     processed_params: dict[str, ParamDoc] = {}
@@ -168,14 +199,15 @@ def _parse_fields(lines: list[str], doc: ParsedDocstring):
     yields_desc = None
 
     for key, arg, content_lines in fields:
-        content = ' '.join(content_lines).strip()
+        content = " ".join(content_lines).strip()
         key_lower = key.lower()
 
-        if key_lower == 'param':
+        if key_lower == "param":
             if arg:
                 parts = arg.split()
+                param_type: Optional[str]
                 if len(parts) >= 2:
-                    param_type = ' '.join(parts[:-1])
+                    param_type = " ".join(parts[:-1])
                     param_name = parts[-1]
                 else:
                     param_name = parts[0]
@@ -192,23 +224,23 @@ def _parse_fields(lines: list[str], doc: ParsedDocstring):
                     if param_type:
                         processed_params[param_name].type_annotation = param_type
 
-        elif key_lower == 'type' and arg:
+        elif key_lower == "type" and arg:
             if arg in processed_params:
                 processed_params[arg].type_annotation = content
             else:
                 processed_params[arg] = ParamDoc(name=arg, type_annotation=content)
 
-        elif key_lower in ('returns', 'return'):
+        elif key_lower in ("returns", "return"):
             returns_desc = content
 
-        elif key_lower == 'rtype':
+        elif key_lower == "rtype":
             pass
 
-        elif key_lower in ('raises', 'raise'):
-            exc_type = arg or ''
+        elif key_lower in ("raises", "raise"):
+            exc_type = arg or ""
             doc.raises.append(RaisesDoc(exc_type=exc_type, description=content))
 
-        elif key_lower in ('yields', 'yield'):
+        elif key_lower in ("yields", "yield"):
             yields_desc = content
 
     for param in processed_params.values():
@@ -218,7 +250,7 @@ def _parse_fields(lines: list[str], doc: ParsedDocstring):
     if returns_desc is not None or rtype is not None:
         doc.returns = ReturnsDoc(
             type_annotation=rtype,
-            description=returns_desc or '',
+            description=returns_desc or "",
         )
 
     if yields_desc is not None:

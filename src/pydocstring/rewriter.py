@@ -1,7 +1,7 @@
 """CST-based source rewriter using libcst."""
+
 from __future__ import annotations
-import re
-from typing import Optional, Union
+from typing import Any, Optional
 import libcst as cst
 from pydocstring.models import DocstringStyle
 from pydocstring.detector import detect_style
@@ -13,12 +13,12 @@ from pydocstring.renderer_sphinx import render_sphinx
 
 def _get_body_indent(raw_value: str, quote: str) -> str:
     """Get the indentation used in docstring body (continuation lines)."""
-    after_open = raw_value[len(quote):]
-    lines = after_open.split('\n')
+    after_open = raw_value[len(quote) :]
+    lines = after_open.split("\n")
     for line in lines[1:]:
         stripped = line.lstrip()
         if stripped and not stripped.startswith(quote):
-            return line[:len(line) - len(stripped)]
+            return line[: len(line) - len(stripped)]
     return "    "
 
 
@@ -26,37 +26,37 @@ def _normalize_docstring_content(content: str, body_indent: str) -> str:
     """Strip body_indent from continuation lines (all lines after line 0)."""
     if not body_indent:
         return content
-    lines = content.split('\n')
+    lines = content.split("\n")
     if len(lines) <= 1:
         return content
 
     result = [lines[0]]
     for line in lines[1:]:
         if line.startswith(body_indent):
-            result.append(line[len(body_indent):])
-        elif line.strip() == '':
-            result.append('')
+            result.append(line[len(body_indent) :])
+        elif line.strip() == "":
+            result.append("")
         else:
-            result.append(line.lstrip() if line.lstrip() else '')
-    return '\n'.join(result)
+            result.append(line.lstrip() if line.lstrip() else "")
+    return "\n".join(result)
 
 
 def _rebuild_docstring(rendered: str, body_indent: str, quote: str) -> str:
     """Rebuild a docstring string literal from rendered content."""
-    rendered = rendered.rstrip('\n')
-    lines = rendered.split('\n')
+    rendered = rendered.rstrip("\n")
+    lines = rendered.split("\n")
 
-    if len(lines) == 1 and '\n' not in rendered:
-        return f'{quote}{rendered}{quote}'
+    if len(lines) == 1 and "\n" not in rendered:
+        return f"{quote}{rendered}{quote}"
 
     parts = [quote + lines[0]]
     for line in lines[1:]:
         if line.strip():
             parts.append(body_indent + line)
         else:
-            parts.append('')
+            parts.append("")
     parts.append(body_indent + quote)
-    return '\n'.join(parts)
+    return "\n".join(parts)
 
 
 def _parse_docstring(text: str, style: DocstringStyle) -> object:
@@ -92,7 +92,7 @@ class DocstringRewriter(cst.CSTTransformer):
         self.source_style = source_style
         self.warnings = warnings if warnings is not None else []
 
-    def _process_body(self, body, node) -> object:
+    def _process_body(self, body: Any, node: Any) -> Any:
         """Process the body of a module/class/function to rewrite its docstring."""
         if not body:
             return node
@@ -112,17 +112,17 @@ class DocstringRewriter(cst.CSTTransformer):
 
         quote = None
         for q in ('"""', "'''"):
-            if raw.startswith(q) or raw.startswith(f'r{q}') or raw.startswith(f'u{q}'):
+            if raw.startswith(q) or raw.startswith(f"r{q}") or raw.startswith(f"u{q}"):
                 quote = q
                 break
         if quote is None:
             return node
 
         prefix_end = raw.index(quote)
-        open_quote = raw[:prefix_end + len(quote)]
+        open_quote = raw[: prefix_end + len(quote)]
         if not raw.endswith(quote):
             return node
-        content = raw[len(open_quote):-len(quote)]
+        content = raw[len(open_quote) : -len(quote)]
 
         body_indent = _get_body_indent(raw, quote)
 
@@ -160,7 +160,9 @@ class DocstringRewriter(cst.CSTTransformer):
             self.warnings.append(f"Failed to rewrite docstring: {e}")
             return node
 
-    def leave_Module(self, original_node: cst.Module, updated_node: cst.Module) -> cst.Module:
+    def leave_Module(
+        self, original_node: cst.Module, updated_node: cst.Module
+    ) -> cst.Module:
         """Rewrite the module-level docstring when visiting a Module node."""
         body = updated_node.body
         return self._process_body(body, updated_node)

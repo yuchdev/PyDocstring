@@ -1,9 +1,10 @@
 """Integration tests for full project conversion."""
+
 import importlib.util
 import shutil
 import sys
-import pytest
-from pathlib import Path
+
+from tests import PROJECT_ROOT
 from pydocstring.converter import convert_project
 
 
@@ -105,7 +106,12 @@ class Calculator:
 
 
 def test_google_to_sphinx_project(tmp_path):
-    """Test converting a full project from Google to Sphinx style."""
+    """[Integration] converter: convert_project converts a full project from Google to Sphinx style.
+
+    Scenario: Write a Python file with Google-style docstrings and convert the project to Sphinx style.
+    Boundaries: One file with function and class docstrings; all Google markers must be gone after conversion.
+    On failure, first check: convert_project file discovery, rewrite_source, and Sphinx field presence.
+    """
     input_dir = tmp_path / "input"
     input_dir.mkdir()
     (input_dir / "sample.py").write_text(GOOGLE_SAMPLE)
@@ -124,7 +130,12 @@ def test_google_to_sphinx_project(tmp_path):
 
 
 def test_sphinx_to_google_project(tmp_path):
-    """Test converting a full project from Sphinx to Google style."""
+    """[Integration] converter: convert_project converts a full project from Sphinx to Google style.
+
+    Scenario: Write a Python file with Sphinx-style docstrings and convert the project to Google style.
+    Boundaries: One file with function and class docstrings; all Sphinx markers must be gone after conversion.
+    On failure, first check: convert_project file discovery, rewrite_source, and Google section presence.
+    """
     input_dir = tmp_path / "input"
     input_dir.mkdir()
     (input_dir / "sample.py").write_text(SPHINX_SAMPLE)
@@ -143,7 +154,12 @@ def test_sphinx_to_google_project(tmp_path):
 
 
 def test_idempotent_google_to_sphinx(tmp_path):
-    """Converting twice should produce same result."""
+    """[Integration] converter: converting Google to Sphinx twice produces no further changes.
+
+    Scenario: Convert a Google-style project to Sphinx, then convert the result again; second pass is a no-op.
+    Boundaries: Single file; second conversion must report zero changed files.
+    On failure, first check: idempotency of rewrite_source and style detection after first conversion.
+    """
     input_dir = tmp_path / "input"
     input_dir.mkdir()
     (input_dir / "sample.py").write_text(GOOGLE_SAMPLE)
@@ -161,7 +177,12 @@ def test_idempotent_google_to_sphinx(tmp_path):
 
 
 def test_roundtrip_google_sphinx_google(tmp_path):
-    """Google -> Sphinx -> Google should preserve key information."""
+    """[Integration] converter: Google to Sphinx to Google roundtrip preserves key documentation.
+
+    Scenario: Convert a Google-style project to Sphinx, then convert back to Google; verify key info retained.
+    Boundaries: Single file with Args, Returns sections; param names and types must survive roundtrip.
+    On failure, first check: roundtrip fidelity of parser, renderer, and rewriter for both styles.
+    """
     input_dir = tmp_path / "input"
     input_dir.mkdir()
     (input_dir / "sample.py").write_text(GOOGLE_SAMPLE)
@@ -182,7 +203,12 @@ def test_roundtrip_google_sphinx_google(tmp_path):
 
 
 def test_exclude_glob(tmp_path):
-    """Test that exclude globs work."""
+    """[Integration] converter: convert_project respects exclude_globs to skip matching files.
+
+    Scenario: Create two Python files and convert the project with one file excluded by glob pattern.
+    Boundaries: Two files; one excluded by pattern; only one file should be processed.
+    On failure, first check: convert_project exclude_globs filtering and file discovery logic.
+    """
     input_dir = tmp_path / "input"
     input_dir.mkdir()
     (input_dir / "sample.py").write_text(GOOGLE_SAMPLE)
@@ -198,7 +224,12 @@ def test_exclude_glob(tmp_path):
 
 
 def test_nested_directories(tmp_path):
-    """Test that nested directories are scanned."""
+    """[Integration] converter: convert_project scans nested subdirectories recursively.
+
+    Scenario: Create Python files in both a root directory and a subdirectory, then convert the project.
+    Boundaries: Two files in different directory levels; both must be processed.
+    On failure, first check: convert_project recursive directory traversal and files_processed count.
+    """
     input_dir = tmp_path / "input"
     input_dir.mkdir()
     sub_dir = input_dir / "sub"
@@ -214,14 +245,17 @@ def test_nested_directories(tmp_path):
 # Fixture-based tests
 # ---------------------------------------------------------------------------
 
-from tests import PROJECT_ROOT
-
 
 FIXTURES_DIR = PROJECT_ROOT / "tests" / "fixtures" / "projects"
 
 
 def test_fixture_google_to_sphinx_matches_expected(tmp_path):
-    """Fixture project conversion matches expected output files."""
+    """[Integration] converter: convert_project output matches expected fixture files for Google-to-Sphinx.
+
+    Scenario: Copy a fixture input directory, run Google-to-Sphinx conversion, compare with expected output.
+    Boundaries: Fixture project with known input/expected output; converted files must match byte-for-byte.
+    On failure, first check: fixture files in tests/fixtures/projects/google_to_sphinx and rewriter logic.
+    """
     fixture_dir = FIXTURES_DIR / "google_to_sphinx" / "basic_project"
     input_dir = fixture_dir / "input"
     expected_dir = fixture_dir / "expected"
@@ -242,7 +276,12 @@ def test_fixture_google_to_sphinx_matches_expected(tmp_path):
 
 
 def test_fixture_sphinx_to_google_matches_expected(tmp_path):
-    """Fixture project conversion matches expected output files."""
+    """[Integration] converter: convert_project output matches expected fixture files for Sphinx-to-Google.
+
+    Scenario: Copy a fixture input directory, run Sphinx-to-Google conversion, compare with expected output.
+    Boundaries: Fixture project with known input/expected output; converted files must match byte-for-byte.
+    On failure, first check: fixture files in tests/fixtures/projects/sphinx_to_google and rewriter logic.
+    """
     fixture_dir = FIXTURES_DIR / "sphinx_to_google" / "basic_project"
     input_dir = fixture_dir / "input"
     expected_dir = fixture_dir / "expected"
@@ -311,7 +350,12 @@ class DocumentedClass:
 
 
 def test_google_to_sphinx_doc_attributes(tmp_path):
-    """After Google->Sphinx conversion, __doc__ attributes reflect Sphinx style."""
+    """[Integration] converter: after Google-to-Sphinx conversion, __doc__ attributes reflect Sphinx style.
+
+    Scenario: Convert a Google-style module to Sphinx, import the result, and inspect __doc__ attributes.
+    Boundaries: Module with function, class, and method docstrings; all must use Sphinx fields post-conversion.
+    On failure, first check: rewrite_source Sphinx output, module import, and __doc__ attribute values.
+    """
     src_file = tmp_path / "doc_test_module.py"
     src_file.write_text(GOOGLE_DOC_MODULE)
 
@@ -335,7 +379,9 @@ def test_google_to_sphinx_doc_attributes(tmp_path):
 
     # Function __doc__ should now use Sphinx style
     func_doc = mod.documented_function.__doc__
-    assert ":param x:" in func_doc, f"Expected :param x: in function __doc__, got:\n{func_doc}"
+    assert ":param x:" in func_doc, (
+        f"Expected :param x: in function __doc__, got:\n{func_doc}"
+    )
     assert ":type x: int" in func_doc
     assert ":returns:" in func_doc
     assert ":rtype: int" in func_doc
@@ -406,7 +452,12 @@ class DocumentedClass:
 
 
 def test_sphinx_to_google_doc_attributes(tmp_path):
-    """After Sphinx->Google conversion, __doc__ attributes reflect Google style."""
+    """[Integration] converter: after Sphinx-to-Google conversion, __doc__ attributes reflect Google style.
+
+    Scenario: Convert a Sphinx-style module to Google, import the result, and inspect __doc__ attributes.
+    Boundaries: Module with function, class, and method docstrings; all must use Google sections post-conversion.
+    On failure, first check: rewrite_source Google output, module import, and __doc__ attribute values.
+    """
     src_file = tmp_path / "doc_test_module2.py"
     src_file.write_text(SPHINX_DOC_MODULE)
 
