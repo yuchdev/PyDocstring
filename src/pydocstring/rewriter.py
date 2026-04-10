@@ -87,11 +87,12 @@ class DocstringRewriter(cst.CSTTransformer):
         source_style: Optional[DocstringStyle] = None,
         warnings: Optional[list] = None,
     ):
+        """Initialise the rewriter with the target style and optional settings."""
         self.target_style = target_style
         self.source_style = source_style
         self.warnings = warnings if warnings is not None else []
 
-    def _process_body(self, body, node):
+    def _process_body(self, body, node) -> object:
         """Process the body of a module/class/function to rewrite its docstring."""
         if not body:
             return node
@@ -155,17 +156,19 @@ class DocstringRewriter(cst.CSTTransformer):
             else:
                 new_indented = node.body.with_changes(body=new_body)
                 return node.with_changes(body=new_indented)
-        except Exception as e:
+        except (ValueError, TypeError, RuntimeError) as e:
             self.warnings.append(f"Failed to rewrite docstring: {e}")
             return node
 
     def leave_Module(self, original_node: cst.Module, updated_node: cst.Module) -> cst.Module:
+        """Rewrite the module-level docstring when visiting a Module node."""
         body = updated_node.body
         return self._process_body(body, updated_node)
 
     def leave_FunctionDef(
         self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef
     ) -> cst.FunctionDef:
+        """Rewrite function docstrings when visiting a FunctionDef node."""
         if isinstance(updated_node.body, cst.IndentedBlock):
             body = updated_node.body.body
             return self._process_body(body, updated_node)
@@ -174,6 +177,7 @@ class DocstringRewriter(cst.CSTTransformer):
     def leave_ClassDef(
         self, original_node: cst.ClassDef, updated_node: cst.ClassDef
     ) -> cst.ClassDef:
+        """Rewrite class docstrings when visiting a ClassDef node."""
         if isinstance(updated_node.body, cst.IndentedBlock):
             body = updated_node.body.body
             return self._process_body(body, updated_node)

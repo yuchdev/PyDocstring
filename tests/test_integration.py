@@ -1,4 +1,7 @@
 """Integration tests for full project conversion."""
+import importlib.util
+import shutil
+import sys
 import pytest
 from pathlib import Path
 from pydocstring.converter import convert_project
@@ -221,7 +224,6 @@ def test_fixture_google_to_sphinx_matches_expected(tmp_path):
     expected_dir = fixture_dir / "expected"
 
     # Copy input to tmp_path so we can rewrite in place
-    import shutil
     work_dir = tmp_path / "work"
     shutil.copytree(input_dir, work_dir)
 
@@ -242,7 +244,6 @@ def test_fixture_sphinx_to_google_matches_expected(tmp_path):
     input_dir = fixture_dir / "input"
     expected_dir = fixture_dir / "expected"
 
-    import shutil
     work_dir = tmp_path / "work"
     shutil.copytree(input_dir, work_dir)
 
@@ -308,13 +309,9 @@ class DocumentedClass:
 
 def test_google_to_sphinx_doc_attributes(tmp_path):
     """After Google->Sphinx conversion, __doc__ attributes reflect Sphinx style."""
-    import importlib.util
-    import sys
-
     src_file = tmp_path / "doc_test_module.py"
     src_file.write_text(GOOGLE_DOC_MODULE)
 
-    import shutil
     work_dir = tmp_path / "work"
     shutil.copytree(tmp_path, work_dir, ignore=shutil.ignore_patterns("work"))
 
@@ -407,13 +404,9 @@ class DocumentedClass:
 
 def test_sphinx_to_google_doc_attributes(tmp_path):
     """After Sphinx->Google conversion, __doc__ attributes reflect Google style."""
-    import importlib.util
-    import sys
-
     src_file = tmp_path / "doc_test_module2.py"
     src_file.write_text(SPHINX_DOC_MODULE)
 
-    import shutil
     work_dir = tmp_path / "work"
     shutil.copytree(tmp_path, work_dir, ignore=shutil.ignore_patterns("work"))
 

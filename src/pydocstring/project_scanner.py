@@ -17,7 +17,7 @@ def detect_file_encoding(path: Path) -> str:
         elif raw.startswith(b'\xef\xbb\xbf'):
             return 'utf-8-sig'
     except OSError:
-        pass
+        return 'utf-8'
     return 'utf-8'
 
 
@@ -29,7 +29,7 @@ def detect_file_newline(path: Path) -> str:
         if b'\r\n' in content:
             return '\r\n'
     except OSError:
-        pass
+        return '\n'
     return '\n'
 
 

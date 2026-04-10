@@ -4,12 +4,14 @@ from pydocstring.models import DocstringStyle
 
 
 def test_parse_empty():
+    """Test parsing an empty string produces an empty ParsedDocstring."""
     doc = parse_google("")
     assert doc.summary == ""
     assert doc.params == []
 
 
 def test_parse_summary_only():
+    """Test parsing a single-line summary docstring."""
     doc = parse_google("Do something.")
     assert doc.summary == "Do something."
     assert doc.params == []
@@ -17,6 +19,7 @@ def test_parse_summary_only():
 
 
 def test_parse_summary_and_extended():
+    """Test parsing a docstring with summary and extended description."""
     text = """Do something.
 
 This is a longer description
@@ -28,6 +31,7 @@ that spans multiple lines.
 
 
 def test_parse_args():
+    """Test parsing a docstring with an Args section."""
     text = """Do something.
 
 Args:
@@ -44,6 +48,7 @@ Args:
 
 
 def test_parse_returns():
+    """Test parsing a docstring with a Returns section."""
     text = """Do something.
 
 Returns:
@@ -56,6 +61,7 @@ Returns:
 
 
 def test_parse_yields():
+    """Test parsing a docstring with a Yields section."""
     text = """Generate values.
 
 Yields:
@@ -67,6 +73,7 @@ Yields:
 
 
 def test_parse_raises():
+    """Test parsing a docstring with a Raises section."""
     text = """Do something.
 
 Raises:
@@ -81,6 +88,7 @@ Raises:
 
 
 def test_parse_custom_section():
+    """Test parsing a docstring with a custom Examples section."""
     text = """Do something.
 
 Examples:
@@ -93,6 +101,7 @@ Examples:
 
 
 def test_parse_args_no_type():
+    """Test parsing an Args section where parameters have no type annotation."""
     text = """Do something.
 
 Args:
@@ -105,6 +114,7 @@ Args:
 
 
 def test_parse_indented_docstring():
+    """Test parsing an indented docstring (as found inside a function body)."""
     text = """    Do something.
 
     Args:
@@ -120,6 +130,7 @@ def test_parse_indented_docstring():
 
 
 def test_parse_returns_no_type():
+    """Test parsing a Returns section with no type annotation."""
     text = """Do something.
 
 Returns:

@@ -6,6 +6,7 @@ from pydocstring.models import (
     ParsedDocstring, ParamDoc, RaisesDoc, ReturnsDoc, YieldsDoc,
     SectionDoc, DocstringStyle,
 )
+from pydocstring.parser_google import _parse_section
 
 FIELD_RE = re.compile(r'^\s*:(\w+)(?:\s+(\S+(?:\s+\S+)*?))?:\s*(.*)')
 
@@ -21,6 +22,7 @@ GOOGLE_SECTION_HEADERS = {
 
 
 def _get_indent(line: str) -> int:
+    """Return the number of leading spaces in *line*."""
     return len(line) - len(line.lstrip())
 
 
@@ -57,7 +59,7 @@ def parse_sphinx(text: str) -> ParsedDocstring:
     return doc
 
 
-def _parse_pre_field(lines: list[str], doc: ParsedDocstring) -> None:
+def _parse_pre_field(lines: list[str], doc: ParsedDocstring):
     """Parse pre-field text into summary and extended description."""
     while lines and not lines[-1].strip():
         lines.pop()
@@ -90,7 +92,7 @@ def _parse_pre_field(lines: list[str], doc: ParsedDocstring) -> None:
             doc.extended_description = '\n'.join(l.strip() for l in rest_lines)
 
 
-def _parse_fields(lines: list[str], doc: ParsedDocstring) -> None:
+def _parse_fields(lines: list[str], doc: ParsedDocstring):
     """Parse sphinx field list and google custom sections."""
     if not lines:
         return
@@ -222,6 +224,5 @@ def _parse_fields(lines: list[str], doc: ParsedDocstring) -> None:
     if yields_desc is not None:
         doc.yields = YieldsDoc(description=yields_desc)
 
-    from pydocstring.parser_google import _parse_section
     for title, body in google_sections:
         _parse_section(title, body, doc)

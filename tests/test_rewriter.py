@@ -35,6 +35,7 @@ SPHINX_SOURCE = '''def foo(x, y):
 
 
 def test_google_to_sphinx():
+    """Test converting a Google-style docstring to Sphinx style."""
     result = rewrite_source(GOOGLE_SOURCE, target_style=DocstringStyle.SPHINX)
     assert ":param x:" in result
     assert ":type x: int" in result
@@ -45,6 +46,7 @@ def test_google_to_sphinx():
 
 
 def test_sphinx_to_google():
+    """Test converting a Sphinx-style docstring to Google style."""
     result = rewrite_source(SPHINX_SOURCE, target_style=DocstringStyle.GOOGLE)
     assert "Args:" in result
     assert "    x (int):" in result
@@ -55,16 +57,19 @@ def test_sphinx_to_google():
 
 
 def test_no_change_same_style_google():
+    """Test that source is unchanged when target style matches source style (Google)."""
     result = rewrite_source(GOOGLE_SOURCE, target_style=DocstringStyle.GOOGLE)
     assert result == GOOGLE_SOURCE
 
 
 def test_no_change_same_style_sphinx():
+    """Test that source is unchanged when target style matches source style (Sphinx)."""
     result = rewrite_source(SPHINX_SOURCE, target_style=DocstringStyle.SPHINX)
     assert result == SPHINX_SOURCE
 
 
 def test_rewrite_class_docstring():
+    """Test rewriting a class docstring."""
     source = '''class Foo:
     """A class.
 
@@ -79,6 +84,7 @@ def test_rewrite_class_docstring():
 
 
 def test_rewrite_module_docstring():
+    """Test rewriting a module-level docstring."""
     source = '''"""Module docstring.
 
 Args:
@@ -93,6 +99,7 @@ def foo():
 
 
 def test_rewrite_multiple_functions():
+    """Test that all function docstrings are rewritten in a multi-function file."""
     source = '''def foo(x):
     """Foo function.
 
@@ -115,6 +122,7 @@ def bar(y):
 
 
 def test_rewrite_no_docstring():
+    """Test that a function without a docstring is left unchanged."""
     source = '''def foo():
     pass
 '''
@@ -123,6 +131,7 @@ def test_rewrite_no_docstring():
 
 
 def test_rewrite_summary_only():
+    """Test that a summary-only docstring is preserved when rewriting."""
     source = '''def foo():
     """Simple summary."""
     pass
@@ -133,6 +142,7 @@ def test_rewrite_summary_only():
 
 
 def test_explicit_source_style():
+    """Test rewriting with an explicitly specified source style."""
     result = rewrite_source(
         GOOGLE_SOURCE,
         target_style=DocstringStyle.SPHINX,

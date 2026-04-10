@@ -4,11 +4,13 @@ from pydocstring.models import DocstringStyle
 
 
 def test_detect_empty():
+    """Test that an empty string returns UNKNOWN style."""
     result = detect_style("")
     assert result.style == DocstringStyle.UNKNOWN
 
 
 def test_detect_google_args():
+    """Test detecting Google-style docstrings with Args section."""
     text = """Do something.
 
 Args:
@@ -24,6 +26,7 @@ Returns:
 
 
 def test_detect_sphinx():
+    """Test detecting Sphinx-style docstrings with :param fields."""
     text = """Do something.
 
 :param x: A number.
@@ -37,6 +40,7 @@ def test_detect_sphinx():
 
 
 def test_detect_mixed():
+    """Test detecting mixed-style docstrings."""
     text = """Do something.
 
 Args:
@@ -49,12 +53,14 @@ Args:
 
 
 def test_detect_no_markers():
+    """Test that a plain summary without markers returns UNKNOWN."""
     text = "Simple one-line docstring."
     result = detect_style(text)
     assert result.style == DocstringStyle.UNKNOWN
 
 
 def test_detect_google_raises():
+    """Test detecting Google-style docstrings with Raises section."""
     text = """Do something.
 
 Raises:

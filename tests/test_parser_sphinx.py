@@ -4,17 +4,20 @@ from pydocstring.models import DocstringStyle
 
 
 def test_parse_empty():
+    """Test parsing an empty string produces an empty ParsedDocstring."""
     doc = parse_sphinx("")
     assert doc.summary == ""
     assert doc.params == []
 
 
 def test_parse_summary_only():
+    """Test parsing a single-line summary Sphinx docstring."""
     doc = parse_sphinx("Do something.")
     assert doc.summary == "Do something."
 
 
 def test_parse_params():
+    """Test parsing Sphinx :param and :type fields."""
     text = """Do something.
 
 :param x: A number.
@@ -32,6 +35,7 @@ def test_parse_params():
 
 
 def test_parse_returns():
+    """Test parsing Sphinx :returns and :rtype fields."""
     text = """Do something.
 
 :returns: True if successful.
@@ -44,6 +48,7 @@ def test_parse_returns():
 
 
 def test_parse_raises():
+    """Test parsing Sphinx :raises fields."""
     text = """Do something.
 
 :raises ValueError: If value is wrong.
@@ -56,6 +61,7 @@ def test_parse_raises():
 
 
 def test_parse_yields():
+    """Test parsing a Sphinx :yields field."""
     text = """Generate values.
 
 :yields: A number.
@@ -66,6 +72,7 @@ def test_parse_yields():
 
 
 def test_parse_param_inline_type():
+    """Test parsing a Sphinx :param with inline type annotation."""
     text = """Do something.
 
 :param int x: A number.

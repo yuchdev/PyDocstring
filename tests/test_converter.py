@@ -6,18 +6,21 @@ from pydocstring.models import DocstringStyle
 
 
 def test_detect_docstring_style_google():
+    """Test detecting Google-style docstrings."""
     text = "Args:\n    x (int): A number."
     result = detect_docstring_style(text)
     assert result.style == DocstringStyle.GOOGLE
 
 
 def test_detect_docstring_style_sphinx():
+    """Test detecting Sphinx-style docstrings."""
     text = ":param x: A number.\n:type x: int"
     result = detect_docstring_style(text)
     assert result.style == DocstringStyle.SPHINX
 
 
 def test_convert_file_google_to_sphinx(tmp_path):
+    """Test converting a file from Google style to Sphinx style."""
     source = '''def foo(x):
     """Do something.
 
@@ -39,6 +42,7 @@ def test_convert_file_google_to_sphinx(tmp_path):
 
 
 def test_convert_file_dry_run(tmp_path):
+    """Test that dry_run mode does not write changes to disk."""
     source = '''def foo(x):
     """Do something.
 
@@ -57,6 +61,7 @@ def test_convert_file_dry_run(tmp_path):
 
 
 def test_convert_file_no_change(tmp_path):
+    """Test that converting a file already in target style reports no change."""
     source = '''def foo(x):
     """Do something.
 
@@ -73,6 +78,7 @@ def test_convert_file_no_change(tmp_path):
 
 
 def test_convert_project(tmp_path):
+    """Test converting multiple files in a project directory."""
     source1 = '''def foo(x):
     """Do something.
 

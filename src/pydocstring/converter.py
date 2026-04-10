@@ -8,10 +8,11 @@ from pydocstring.models import (
 )
 from pydocstring.detector import detect_style
 from pydocstring.rewriter import rewrite_source
-from pydocstring.project_scanner import scan_project
+from pydocstring.project_scanner import scan_project, detect_file_encoding, detect_file_newline
 
 
 def _parse_style(style_str: Optional[str]) -> Optional[DocstringStyle]:
+    """Parse a style string into a DocstringStyle enum value."""
     if style_str is None or style_str == 'auto':
         return None
     return DocstringStyle(style_str.lower())
@@ -34,10 +35,9 @@ def convert_file(
     try:
         encoding = 'utf-8'
         try:
-            from pydocstring.project_scanner import detect_file_encoding, detect_file_newline
             encoding = detect_file_encoding(path)
             newline = detect_file_newline(path)
-        except Exception:
+        except OSError:
             newline = '\n'
 
         with open(path, encoding=encoding, errors='replace', newline='') as f:
@@ -63,7 +63,7 @@ def convert_file(
             with open(path, 'w', encoding=encoding, newline='') as f:
                 f.write(converted)
 
-    except Exception as e:
+    except (OSError, SyntaxError, ValueError) as e:
         result.error = str(e)
 
     return result

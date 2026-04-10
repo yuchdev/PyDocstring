@@ -21,6 +21,7 @@ PARAM_RE = re.compile(
 
 
 def _get_indent(line: str) -> int:
+    """Return the number of leading spaces in *line*."""
     return len(line) - len(line.lstrip())
 
 
@@ -160,7 +161,7 @@ def parse_google(text: str) -> ParsedDocstring:
     return doc
 
 
-def _parse_pre_section(lines: list[str], doc: ParsedDocstring) -> None:
+def _parse_pre_section(lines: list[str], doc: ParsedDocstring):
     """Parse pre-section text into summary and extended description."""
     while lines and not lines[-1].strip():
         lines.pop()
@@ -194,7 +195,7 @@ def _parse_pre_section(lines: list[str], doc: ParsedDocstring) -> None:
             doc.extended_description = '\n'.join(l.strip() for l in rest_lines)
 
 
-def _parse_section(title: str, body: list[str], doc: ParsedDocstring) -> None:
+def _parse_section(title: str, body: list[str], doc: ParsedDocstring):
     """Parse a section and update the doc."""
     while body and not body[-1].strip():
         body.pop()

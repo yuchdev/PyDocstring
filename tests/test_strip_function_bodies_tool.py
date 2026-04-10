@@ -1,3 +1,4 @@
+"""Tests for the strip_function_bodies tool."""
 from __future__ import annotations
 
 import importlib.util
@@ -13,7 +14,8 @@ sys.modules[spec.name] = strip_tool
 spec.loader.exec_module(strip_tool)
 
 
-def test_strip_function_bodies_keeps_docstring_and_replaces_with_pass() -> None:
+def test_strip_function_bodies_keeps_docstring_and_replaces_with_pass():
+    """Test that function bodies are stripped while preserving docstrings."""
     source = '''
 def foo(a, b):
     """Compute something."""
@@ -36,7 +38,8 @@ class Service:
     assert "    pass" in rewritten
 
 
-def test_rewrite_paths_updates_python_files(tmp_path: Path) -> None:
+def test_rewrite_paths_updates_python_files(tmp_path: Path):
+    """Test that rewrite_paths rewrites Python files in a directory."""
     py_file = tmp_path / "sample.py"
     py_file.write_text(
         "def f():\n    \"\"\"Doc.\"\"\"\n    return 1\n",
@@ -53,7 +56,8 @@ def test_rewrite_paths_updates_python_files(tmp_path: Path) -> None:
     assert "pass" in updated
 
 
-def test_rewrite_paths_can_rename_files_by_pattern(tmp_path: Path) -> None:
+def test_rewrite_paths_can_rename_files_by_pattern(tmp_path: Path):
+    """Test that rewrite_paths renames files according to the given pattern."""
     alpha = tmp_path / "alpha.py"
     beta = tmp_path / "beta.py"
     alpha.write_text("def a():\n    return 1\n", encoding="utf-8")

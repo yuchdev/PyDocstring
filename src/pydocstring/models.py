@@ -6,6 +6,8 @@ from typing import Optional
 
 
 class DocstringStyle(str, Enum):
+    """Enumeration of supported docstring styles."""
+
     GOOGLE = "google"
     SPHINX = "sphinx"
     MIXED = "mixed"
