@@ -214,7 +214,10 @@ def test_nested_directories(tmp_path):
 # Fixture-based tests
 # ---------------------------------------------------------------------------
 
-FIXTURES_DIR = Path(__file__).parent / "fixtures" / "projects"
+from tests import PROJECT_ROOT
+
+
+FIXTURES_DIR = PROJECT_ROOT / "tests" / "fixtures" / "projects"
 
 
 def test_fixture_google_to_sphinx_matches_expected(tmp_path):

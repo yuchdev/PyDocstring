@@ -1,19 +1,20 @@
 from __future__ import annotations
 
+
 from pathlib import Path
 from typing import Iterable, List
 
 import pytest
 
 from tests import PROJECT_ROOT
-from lint_rules import check_file, RuleViolation
+from tests.lint.lint_rules import check_file, RuleViolation
 
 
 
 def iter_python_files() -> Iterable[Path]:
     """Yield all project top-level *.py files in covered_dirs (no subfolders)."""
     covered_dirs = [
-        PROJECT_ROOT / "src"
+        PROJECT_ROOT / "src",
         PROJECT_ROOT / "tests",
         PROJECT_ROOT / "tests" / "lint"
     ]

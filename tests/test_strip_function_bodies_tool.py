@@ -5,8 +5,10 @@ import importlib.util
 import sys
 from pathlib import Path
 
+from tests import PROJECT_ROOT
 
-TOOL_PATH = Path(__file__).resolve().parents[1] / "tools" / "strip_function_bodies.py"
+
+TOOL_PATH = PROJECT_ROOT / "tools" / "strip_function_bodies.py"
 spec = importlib.util.spec_from_file_location("strip_tool", TOOL_PATH)
 strip_tool = importlib.util.module_from_spec(spec)
 assert spec and spec.loader
