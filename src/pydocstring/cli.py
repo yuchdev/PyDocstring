@@ -14,7 +14,9 @@ def _existing_dir(path_str: str) -> Path:
     """Argparse type: ensure path exists and is a directory, return Path."""
     p = Path(path_str)
     if not p.exists() or not p.is_dir():
-        raise argparse.ArgumentTypeError(f"Path does not exist or is not a directory: {path_str}")
+        raise argparse.ArgumentTypeError(
+            f"Path does not exist or is not a directory: {path_str}"
+        )
     return p
 
 
@@ -24,7 +26,9 @@ def _build_parser() -> argparse.ArgumentParser:
         description="PyDocstring - Convert Python docstrings between Google and Sphinx styles.",
     )
 
-    parser.add_argument("project_root", type=_existing_dir, help="Project root directory")
+    parser.add_argument(
+        "project_root", type=_existing_dir, help="Project root directory"
+    )
     parser.add_argument(
         "--to",
         dest="target_style",
@@ -130,10 +134,16 @@ def _cmd_convert(
                 print(f"ERROR {rel}: {file_result.error}", file=sys.stderr)
             elif file_result.changed:
                 if verbose or diff or dry_run:
-                    print(f"{'Would change' if effective_dry_run else 'Changed'}: {rel}")
+                    print(
+                        f"{'Would change' if effective_dry_run else 'Changed'}: {rel}"
+                    )
                 if diff:
-                    original_lines = file_result.original_source.splitlines(keepends=True)
-                    converted_lines = file_result.converted_source.splitlines(keepends=True)
+                    original_lines = file_result.original_source.splitlines(
+                        keepends=True
+                    )
+                    converted_lines = file_result.converted_source.splitlines(
+                        keepends=True
+                    )
                     diff_lines = difflib.unified_diff(
                         original_lines,
                         converted_lines,
