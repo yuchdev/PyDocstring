@@ -1,12 +1,17 @@
 """Render ParsedDocstring to Sphinx-style string."""
 
 from __future__ import annotations
+
+from typing import Optional
+
 from pydocstring.models import ParsedDocstring
 
 
-def render_sphinx(doc: ParsedDocstring, indent: str = "    ") -> str:
+def render_sphinx(doc: ParsedDocstring, indent: Optional[str] = None) -> str:
     """Render a ParsedDocstring to a Sphinx-style docstring string."""
     parts = []
+    if indent is None:
+        indent = "    "
 
     if doc.summary:
         parts.append(doc.summary)

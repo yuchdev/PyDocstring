@@ -65,7 +65,7 @@ Walks a project directory tree, filtering `.py` files by include/exclude globs. 
 High-level API wrapping the scanner and rewriter. Provides `convert_file`, `convert_project`, and `detect_docstring_style`.
 
 ### `cli.py`
-Click-based CLI entry point (`pydocstring` command). Supports `convert` subcommand with all flags.
+Argparse-based CLI entry point (`pydocstring` command). No subcommands, all flags are on the root command.
 
 ## Data Flow
 

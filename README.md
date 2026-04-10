@@ -41,34 +41,34 @@ uv add pydocstring
 
 ```bash
 # Convert a project from Google to Sphinx style (in-place)
-pydocstring convert /path/to/myproject --to sphinx
+pydocstring /path/to/myproject --to sphinx
 
 # Convert from Sphinx to Google style (in-place)
-pydocstring convert /path/to/myproject --to google
+pydocstring /path/to/myproject --to google
 
 # Dry-run: show what would change without writing
-pydocstring convert /path/to/myproject --to sphinx --dry-run
+pydocstring /path/to/myproject --to sphinx --dry-run
 
 # Check mode: exit 1 if any file needs conversion
-pydocstring convert /path/to/myproject --to sphinx --check
+pydocstring /path/to/myproject --to sphinx --check
 
 # Diff mode: show unified diffs
-pydocstring convert /path/to/myproject --to sphinx --diff
+pydocstring /path/to/myproject --to sphinx --diff
 
 # Verbose output
-pydocstring convert /path/to/myproject --to sphinx --verbose
+pydocstring /path/to/myproject --to sphinx --verbose
 
 # Exclude files matching a glob
-pydocstring convert /path/to/myproject --to sphinx --exclude "tests/**"
+pydocstring /path/to/myproject --to sphinx --exclude "tests/**"
 
 # Include only specific files
-pydocstring convert /path/to/myproject --to sphinx --include "src/**"
+pydocstring /path/to/myproject --to sphinx --include "src/**"
 
 # Override source style detection
-pydocstring convert /path/to/myproject --to sphinx --from google
+pydocstring /path/to/myproject --to sphinx --from google
 
 # Save a JSON report
-pydocstring convert /path/to/myproject --to sphinx --json-report report.json
+pydocstring /path/to/myproject --to sphinx --json-report report.json
 ```
 
 ---
@@ -105,13 +105,13 @@ Use `--check` in CI to ensure a project conforms to a target style:
 
 ```bash
 # In CI: fail if any docstring is not Sphinx-style
-pydocstring convert . --to sphinx --check
+pydocstring . --to sphinx --check
 ```
 
 Use `--diff` to review changes before applying:
 
 ```bash
-pydocstring convert . --to sphinx --diff | less
+pydocstring . --to sphinx --diff | less
 ```
 
 ---

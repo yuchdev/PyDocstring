@@ -9,12 +9,12 @@ uv tool install pydocstring
 
 ## Commands
 
-### `pydocstring convert`
+### `pydocstring`
 
 Convert docstrings in a Python project.
 
 ```
-pydocstring convert PROJECT_ROOT --to {google,sphinx} [OPTIONS]
+pydocstring PROJECT_ROOT --to {google,sphinx} [OPTIONS]
 ```
 
 **Required arguments:**
@@ -51,46 +51,46 @@ pydocstring convert PROJECT_ROOT --to {google,sphinx} [OPTIONS]
 
 ```bash
 # Convert Google → Sphinx
-pydocstring convert ./myproject --to sphinx
+pydocstring ./myproject --to sphinx
 
 # Convert Sphinx → Google
-pydocstring convert ./myproject --to google
+pydocstring ./myproject --to google
 ```
 
 ### Safe workflows (inspect before writing)
 
 ```bash
 # View diffs only
-pydocstring convert ./myproject --to sphinx --diff
+pydocstring ./myproject --to sphinx --diff
 
 # Dry-run with verbose output
-pydocstring convert ./myproject --to sphinx --dry-run --verbose
+pydocstring ./myproject --to sphinx --dry-run --verbose
 ```
 
 ### CI enforcement
 
 ```bash
 # Fail if project is not using Sphinx style
-pydocstring convert . --to sphinx --check
+pydocstring . --to sphinx --check
 ```
 
 ### Selective processing
 
 ```bash
 # Only convert files in src/
-pydocstring convert . --to sphinx --include "src/**/*.py"
+pydocstring . --to sphinx --include "src/**/*.py"
 
 # Skip test files
-pydocstring convert . --to sphinx --exclude "tests/**"
+pydocstring . --to sphinx --exclude "tests/**"
 
 # Skip vendored code
-pydocstring convert . --to sphinx --exclude "vendor/**" --exclude "third_party/**"
+pydocstring . --to sphinx --exclude "vendor/**" --exclude "third_party/**"
 ```
 
 ### JSON report
 
 ```bash
-pydocstring convert . --to sphinx --json-report conversion_report.json
+pydocstring . --to sphinx --json-report conversion_report.json
 ```
 
 The JSON report has the structure:

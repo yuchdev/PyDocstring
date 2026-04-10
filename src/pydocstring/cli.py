@@ -1,80 +1,112 @@
-"""Click-based CLI for pydocstring."""
+"""Argparse-based CLI for pydocstring."""
 
 from __future__ import annotations
+import argparse
 import json
 import sys
 import difflib
 from pathlib import Path
 from typing import Optional
-import click
 from pydocstring.converter import convert_project
 
 
-@click.group()
-def main():
-    """PyDocstring - Convert Python docstrings between Google and Sphinx styles."""
-    pass
+def _existing_dir(path_str: str) -> Path:
+    """Argparse type: ensure path exists and is a directory, return Path."""
+    p = Path(path_str)
+    if not p.exists() or not p.is_dir():
+        raise argparse.ArgumentTypeError(f"Path does not exist or is not a directory: {path_str}")
+    return p
 
 
-@main.command()
-@click.argument(
-    "project_root", type=click.Path(exists=True, file_okay=False, path_type=Path)
-)
-@click.option(
-    "--to",
-    "target_style",
-    type=click.Choice(["google", "sphinx"]),
-    required=True,
-    help="Target docstring style",
-)
-@click.option(
-    "--from",
-    "source_style",
-    type=click.Choice(["google", "sphinx", "auto"]),
-    default="auto",
-    help="Source docstring style (default: auto-detect)",
-)
-@click.option(
-    "--dry-run", is_flag=True, help="Don't write files, just show what would change"
-)
-@click.option("--check", is_flag=True, help="Exit with code 1 if any file would change")
-@click.option("--diff", is_flag=True, help="Print unified diffs without writing")
-@click.option(
-    "--include",
-    "include_globs",
-    multiple=True,
-    metavar="GLOB",
-    help="Include files matching glob pattern",
-)
-@click.option(
-    "--exclude",
-    "exclude_globs",
-    multiple=True,
-    metavar="GLOB",
-    help="Exclude files matching glob pattern",
-)
-@click.option("--verbose", "-v", is_flag=True, help="Show each file processed")
-@click.option("--quiet", "-q", is_flag=True, help="Suppress output except errors")
-@click.option(
-    "--json-report",
-    type=click.Path(path_type=Path),
-    default=None,
-    help="Write JSON report to file",
-)
-def convert(
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="pydocstring",
+        description="PyDocstring - Convert Python docstrings between Google and Sphinx styles.",
+    )
+
+    parser.add_argument("project_root", type=_existing_dir, help="Project root directory")
+    parser.add_argument(
+        "--to",
+        dest="target_style",
+        choices=["google", "sphinx"],
+        required=True,
+        help="Target docstring style",
+    )
+    parser.add_argument(
+        "--from",
+        dest="source_style",
+        choices=["google", "sphinx", "auto"],
+        default="auto",
+        help="Source docstring style (default: auto-detect)",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Don't write files, just show what would change",
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Exit with code 1 if any file would change",
+    )
+    parser.add_argument(
+        "--diff",
+        action="store_true",
+        help="Print unified diffs without writing",
+    )
+    parser.add_argument(
+        "--include",
+        dest="include_globs",
+        metavar="GLOB",
+        action="append",
+        default=None,
+        help="Include files matching glob pattern (can be repeated)",
+    )
+    parser.add_argument(
+        "--exclude",
+        dest="exclude_globs",
+        metavar="GLOB",
+        action="append",
+        default=None,
+        help="Exclude files matching glob pattern (can be repeated)",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Show each file processed",
+    )
+    parser.add_argument(
+        "-q",
+        "--quiet",
+        action="store_true",
+        help="Suppress output except errors",
+    )
+    parser.add_argument(
+        "--json-report",
+        dest="json_report",
+        type=Path,
+        default=None,
+        help="Write JSON report to file",
+    )
+
+    return parser
+
+
+def _cmd_convert(
     project_root: Path,
     target_style: str,
     source_style: str,
     dry_run: bool,
     check: bool,
     diff: bool,
-    include_globs: tuple,
-    exclude_globs: tuple,
+    include_globs: Optional[list[str]],
+    exclude_globs: Optional[list[str]],
     verbose: bool,
     quiet: bool,
     json_report: Optional[Path],
-):
-    """Convert docstrings in a project."""
+) -> int:
+    """Run convert command; return exit code."""
     effective_dry_run = dry_run or check or diff
 
     result = convert_project(
@@ -95,35 +127,30 @@ def convert(
             )
 
             if file_result.error:
-                click.echo(f"ERROR {rel}: {file_result.error}", err=True)
+                print(f"ERROR {rel}: {file_result.error}", file=sys.stderr)
             elif file_result.changed:
                 if verbose or diff or dry_run:
-                    click.echo(
-                        f"{'Would change' if effective_dry_run else 'Changed'}: {rel}"
-                    )
+                    print(f"{'Would change' if effective_dry_run else 'Changed'}: {rel}")
                 if diff:
-                    original_lines = file_result.original_source.splitlines(
-                        keepends=True
-                    )
-                    converted_lines = file_result.converted_source.splitlines(
-                        keepends=True
-                    )
+                    original_lines = file_result.original_source.splitlines(keepends=True)
+                    converted_lines = file_result.converted_source.splitlines(keepends=True)
                     diff_lines = difflib.unified_diff(
                         original_lines,
                         converted_lines,
                         fromfile=str(rel),
                         tofile=str(rel) + " (converted)",
                     )
-                    click.echo("".join(diff_lines), nl=False)
+                    # unified_diff returns an iterator of lines already containing newlines
+                    sys.stdout.write("".join(diff_lines))
             elif verbose:
-                click.echo(f"Unchanged: {rel}")
+                print(f"Unchanged: {rel}")
 
         if result.warnings and not quiet:
             for w in result.warnings:
-                click.echo(f"Warning: {w}", err=True)
+                print(f"Warning: {w}", file=sys.stderr)
 
         if not quiet:
-            click.echo(
+            print(
                 f"\nProcessed {result.files_processed} files, "
                 f"{result.files_changed} changed, "
                 f"{result.files_skipped} skipped."
@@ -146,8 +173,33 @@ def convert(
                 for fr in result.file_results
             ],
         }
-        with open(json_report, "w") as f:
+        with open(json_report, "w", encoding="utf-8") as f:
             json.dump(report_data, f, indent=2)
 
     if check and result.files_changed > 0:
-        sys.exit(1)
+        return 1
+    return 0
+
+
+def main(argv: Optional[list[str]] = None) -> int:
+    """Console script entry point for pydocstring."""
+    parser = _build_parser()
+    args = parser.parse_args(argv)
+
+    return _cmd_convert(
+        project_root=args.project_root,
+        target_style=args.target_style,
+        source_style=args.source_style,
+        dry_run=args.dry_run,
+        check=args.check,
+        diff=args.diff,
+        include_globs=args.include_globs,
+        exclude_globs=args.exclude_globs,
+        verbose=args.verbose,
+        quiet=args.quiet,
+        json_report=args.json_report,
+    )
+
+
+if __name__ == "__main__":  # pragma: no cover
+    sys.exit(main())

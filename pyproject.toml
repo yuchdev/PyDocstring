@@ -8,7 +8,6 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "libcst>=1.0.0",
-    "click>=8.0.0",
 ]
 
 [project.optional-dependencies]

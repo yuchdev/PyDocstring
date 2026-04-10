@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Optional
+
 
 def detect_indent(text: str) -> str:
     """Detect the dominant indent unit (4 spaces, 2 spaces, tab)."""
@@ -19,8 +21,10 @@ def detect_indent(text: str) -> str:
     return dominant
 
 
-def normalize_indent(text: str, indent: str = "    ") -> str:
+def normalize_indent(text: str, indent: Optional[str] = None) -> str:
     """Normalize indentation."""
+    if indent is None:
+        indent = "    "
     lines = text.split("\n")
     result = []
     for line in lines:
@@ -55,3 +59,4 @@ def strip_docstring_quotes(docstring_node_value: str) -> str:
 def wrap_docstring_quotes(text: str, quote_char: str = '"""') -> str:
     """Wrap text in triple quotes."""
     return f"{quote_char}{text}{quote_char}"
+

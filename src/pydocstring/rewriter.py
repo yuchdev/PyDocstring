@@ -81,13 +81,10 @@ def _render_docstring(parsed, style: DocstringStyle, indent: str = "    ") -> st
 class DocstringRewriter(cst.CSTTransformer):
     """A libcst transformer that rewrites docstrings."""
 
-    def __init__(
-        self,
-        target_style: DocstringStyle,
-        source_style: Optional[DocstringStyle] = None,
-        warnings: Optional[list] = None,
-    ):
+    def __init__(self, target_style: DocstringStyle, source_style: Optional[DocstringStyle] = None,
+                 warnings: Optional[list] = None):
         """Initialise the rewriter with the target style and optional settings."""
+        super().__init__()
         self.target_style = target_style
         self.source_style = source_style
         self.warnings = warnings if warnings is not None else []
