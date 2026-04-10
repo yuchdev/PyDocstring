@@ -92,7 +92,9 @@ class DocstringRewriter(cst.CSTTransformer):
         self.source_style = source_style
         self.warnings = warnings if warnings is not None else []
 
-    def _process_body(self, body, node) -> object:
+    def _process_body(
+        self, body, node: Union[cst.Module, cst.FunctionDef, cst.ClassDef]
+    ) -> Union[cst.Module, cst.FunctionDef, cst.ClassDef]:
         """Process the body of a module/class/function to rewrite its docstring."""
         if not body:
             return node
