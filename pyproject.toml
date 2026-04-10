@@ -5,7 +5,7 @@ description = "Convert Python docstrings between Google style and Sphinx style"
 authors = [
     { name = "copilot-swe-agent[bot]", email = "198982749+Copilot@users.noreply.github.com" }
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "libcst>=1.0.0",
     "click>=8.0.0",
@@ -31,7 +31,7 @@ testpaths = ["tests"]
 pythonpath = ["."]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 warn_return_any = false
 
 [[tool.mypy.overrides]]
