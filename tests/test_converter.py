@@ -1,6 +1,5 @@
 """Tests for the converter module."""
-import pytest
-from pathlib import Path
+
 from pydocstring.converter import convert_file, convert_project, detect_docstring_style
 from pydocstring.models import DocstringStyle
 

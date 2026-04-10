@@ -1,4 +1,5 @@
 """Tests for the strip_function_bodies tool."""
+
 from __future__ import annotations
 
 import importlib.util
@@ -54,7 +55,7 @@ def test_rewrite_paths_updates_python_files(tmp_path: Path):
     """
     py_file = tmp_path / "sample.py"
     py_file.write_text(
-        "def f():\n    \"\"\"Doc.\"\"\"\n    return 1\n",
+        'def f():\n    """Doc."""\n    return 1\n',
         encoding="utf-8",
     )
 

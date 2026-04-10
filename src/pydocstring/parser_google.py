@@ -1,23 +1,43 @@
 """Parse Google-style docstrings into ParsedDocstring."""
+
 from __future__ import annotations
 import re
 from typing import Optional
 from pydocstring.models import (
-    ParsedDocstring, ParamDoc, RaisesDoc, ReturnsDoc, YieldsDoc,
-    SectionDoc, DocstringStyle,
+    ParsedDocstring,
+    ParamDoc,
+    RaisesDoc,
+    ReturnsDoc,
+    YieldsDoc,
+    SectionDoc,
+    DocstringStyle,
 )
 
 GOOGLE_SECTION_HEADERS = {
-    'Args', 'Arguments', 'Parameters', 'Returns', 'Return', 'Yields', 'Yield',
-    'Raises', 'Raise', 'Note', 'Notes', 'Example', 'Examples', 'Warning',
-    'Warnings', 'Todo', 'See Also', 'References', 'Attributes',
+    "Args",
+    "Arguments",
+    "Parameters",
+    "Returns",
+    "Return",
+    "Yields",
+    "Yield",
+    "Raises",
+    "Raise",
+    "Note",
+    "Notes",
+    "Example",
+    "Examples",
+    "Warning",
+    "Warnings",
+    "Todo",
+    "See Also",
+    "References",
+    "Attributes",
 }
 
-SECTION_RE = re.compile(r'^(\s*)([A-Z][a-zA-Z ]*?):\s*$')
+SECTION_RE = re.compile(r"^(\s*)([A-Z][a-zA-Z ]*?):\s*$")
 
-PARAM_RE = re.compile(
-    r'^(\s*)(\*{0,2}\w+)\s*(?:\(([^)]*)\))?\s*:\s*(.*)'
-)
+PARAM_RE = re.compile(r"^(\s*)(\*{0,2}\w+)\s*(?:\(([^)]*)\))?\s*:\s*(.*)")
 
 
 def _get_indent(line: str) -> int:
@@ -25,7 +45,9 @@ def _get_indent(line: str) -> int:
     return len(line) - len(line.lstrip())
 
 
-def _parse_section_body(lines: list[str], section_indent: int) -> list[tuple[str, Optional[str], str]]:
+def _parse_section_body(
+    lines: list[str], section_indent: int
+) -> list[tuple[str, Optional[str], str]]:
     """Parse section body lines into (name, type, description) tuples."""
     items = []
     current_name = None
@@ -37,10 +59,8 @@ def _parse_section_body(lines: list[str], section_indent: int) -> list[tuple[str
     for line in lines:
         if not line.strip():
             if current_name is not None:
-                current_desc_lines.append('')
+                current_desc_lines.append("")
             continue
-
-        line_indent = _get_indent(line)
 
         m = PARAM_RE.match(line)
         if m:
@@ -50,8 +70,8 @@ def _parse_section_body(lines: list[str], section_indent: int) -> list[tuple[str
 
             if item_line_indent == item_indent:
                 if current_name is not None:
-                    desc = ' '.join(
-                        l.strip() if l.strip() else '' for l in current_desc_lines
+                    desc = " ".join(
+                        dl.strip() if dl.strip() else "" for dl in current_desc_lines
                     ).strip()
                     items.append((current_name, current_type, desc))
 
@@ -66,9 +86,7 @@ def _parse_section_body(lines: list[str], section_indent: int) -> list[tuple[str
             current_desc_lines.append(line.strip())
 
     if current_name is not None:
-        desc = ' '.join(
-            l if l.strip() else '' for l in current_desc_lines
-        ).strip()
+        desc = " ".join(dl if dl.strip() else "" for dl in current_desc_lines).strip()
         items.append((current_name, current_type, desc))
 
     return items
@@ -84,25 +102,25 @@ def _parse_returns_body(lines: list[str]) -> tuple[Optional[str], str]:
     for i, line in enumerate(lines):
         if line.strip():
             first_content = line
-            rest_lines = lines[i+1:]
+            rest_lines = lines[i + 1 :]
             break
 
     if first_content is None:
         return None, ""
 
     stripped = first_content.strip()
-    colon_idx = stripped.find(':')
+    colon_idx = stripped.find(":")
     if colon_idx > 0:
         potential_type = stripped[:colon_idx].strip()
-        if re.match(r'^[A-Za-z][\w\[\], |.]*$', potential_type):
-            desc = stripped[colon_idx+1:].strip()
-            continuation = ' '.join(l.strip() for l in rest_lines if l.strip())
+        if re.match(r"^[A-Za-z][\w\[\], |.]*$", potential_type):
+            desc = stripped[colon_idx + 1 :].strip()
+            continuation = " ".join(ln.strip() for ln in rest_lines if ln.strip())
             if continuation:
-                desc = (desc + ' ' + continuation).strip()
+                desc = (desc + " " + continuation).strip()
             return potential_type, desc
 
-    all_lines = [stripped] + [l.strip() for l in rest_lines if l.strip()]
-    return None, ' '.join(all_lines).strip()
+    all_lines = [stripped] + [ln.strip() for ln in rest_lines if ln.strip()]
+    return None, " ".join(all_lines).strip()
 
 
 def parse_google(text: str) -> ParsedDocstring:
@@ -112,7 +130,7 @@ def parse_google(text: str) -> ParsedDocstring:
     if not text.strip():
         return doc
 
-    lines = text.split('\n')
+    lines = text.split("\n")
 
     base_indent = 0
     for line in lines:
@@ -120,10 +138,10 @@ def parse_google(text: str) -> ParsedDocstring:
             base_indent = _get_indent(line)
             break
 
-    sections = []
-    pre_section_lines = []
-    current_section = None
-    current_body = []
+    sections: list[tuple[str, list[str]]] = []
+    pre_section_lines: list[str] = []
+    current_section: Optional[str] = None
+    current_body: list[str] = []
 
     for line in lines:
         if not line.strip():
@@ -184,7 +202,7 @@ def _parse_pre_section(lines: list[str], doc: ParsedDocstring):
         else:
             summary_lines.append(line.strip())
 
-    doc.summary = ' '.join(summary_lines).strip()
+    doc.summary = " ".join(summary_lines).strip()
 
     if rest_lines:
         while rest_lines and not rest_lines[0].strip():
@@ -192,7 +210,7 @@ def _parse_pre_section(lines: list[str], doc: ParsedDocstring):
         while rest_lines and not rest_lines[-1].strip():
             rest_lines.pop()
         if rest_lines:
-            doc.extended_description = '\n'.join(l.strip() for l in rest_lines)
+            doc.extended_description = "\n".join(ln.strip() for ln in rest_lines)
 
 
 def _parse_section(title: str, body: list[str], doc: ParsedDocstring):
@@ -200,20 +218,22 @@ def _parse_section(title: str, body: list[str], doc: ParsedDocstring):
     while body and not body[-1].strip():
         body.pop()
 
-    if title in ('Args', 'Arguments', 'Parameters'):
+    if title in ("Args", "Arguments", "Parameters"):
         items = _parse_section_body(body, 0)
         for name, type_ann, desc in items:
-            doc.params.append(ParamDoc(name=name, type_annotation=type_ann, description=desc))
+            doc.params.append(
+                ParamDoc(name=name, type_annotation=type_ann, description=desc)
+            )
 
-    elif title in ('Returns', 'Return'):
+    elif title in ("Returns", "Return"):
         type_ann, desc = _parse_returns_body(body)
         doc.returns = ReturnsDoc(type_annotation=type_ann, description=desc)
 
-    elif title in ('Yields', 'Yield'):
+    elif title in ("Yields", "Yield"):
         type_ann, desc = _parse_returns_body(body)
         doc.yields = YieldsDoc(type_annotation=type_ann, description=desc)
 
-    elif title in ('Raises', 'Raise'):
+    elif title in ("Raises", "Raise"):
         items = _parse_section_body(body, 0)
         for name, _, desc in items:
             doc.raises.append(RaisesDoc(exc_type=name, description=desc))
@@ -222,12 +242,16 @@ def _parse_section(title: str, body: list[str], doc: ParsedDocstring):
         content_lines = []
         for line in body:
             content_lines.append(line.rstrip())
-        non_empty = [l for l in content_lines if l.strip()]
+        non_empty = [ln for ln in content_lines if ln.strip()]
         if non_empty:
-            min_indent = min(_get_indent(l) for l in non_empty)
-            content_lines = [l[min_indent:] if l.strip() else '' for l in content_lines]
+            min_indent = min(_get_indent(ln) for ln in non_empty)
+            content_lines = [
+                ln[min_indent:] if ln.strip() else "" for ln in content_lines
+            ]
         while content_lines and not content_lines[0].strip():
             content_lines.pop(0)
         while content_lines and not content_lines[-1].strip():
             content_lines.pop()
-        doc.custom_sections.append(SectionDoc(title=title, content='\n'.join(content_lines)))
+        doc.custom_sections.append(
+            SectionDoc(title=title, content="\n".join(content_lines))
+        )

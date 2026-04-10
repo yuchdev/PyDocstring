@@ -1,7 +1,15 @@
 """Tests for Google and Sphinx renderers."""
+
 from pydocstring.renderer_google import render_google
 from pydocstring.renderer_sphinx import render_sphinx
-from pydocstring.models import ParsedDocstring, ParamDoc, RaisesDoc, ReturnsDoc, YieldsDoc, SectionDoc
+from pydocstring.models import (
+    ParsedDocstring,
+    ParamDoc,
+    RaisesDoc,
+    ReturnsDoc,
+    YieldsDoc,
+    SectionDoc,
+)
 
 
 def make_doc() -> ParsedDocstring:
@@ -172,7 +180,7 @@ def test_render_sphinx_no_blank_before_fields_when_no_summary():
     )
     result = render_sphinx(doc)
     # Should not start with blank line
-    assert not result.startswith('\n')
+    assert not result.startswith("\n")
 
 
 def test_render_google_yields():

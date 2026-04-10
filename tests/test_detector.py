@@ -1,4 +1,5 @@
 """Tests for style detector."""
+
 from pydocstring.detector import detect_style
 from pydocstring.models import DocstringStyle
 

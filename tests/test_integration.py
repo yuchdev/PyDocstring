@@ -1,9 +1,10 @@
 """Integration tests for full project conversion."""
+
 import importlib.util
 import shutil
 import sys
-import pytest
-from pathlib import Path
+
+from tests import PROJECT_ROOT
 from pydocstring.converter import convert_project
 
 
@@ -244,8 +245,6 @@ def test_nested_directories(tmp_path):
 # Fixture-based tests
 # ---------------------------------------------------------------------------
 
-from tests import PROJECT_ROOT
-
 
 FIXTURES_DIR = PROJECT_ROOT / "tests" / "fixtures" / "projects"
 
@@ -380,7 +379,9 @@ def test_google_to_sphinx_doc_attributes(tmp_path):
 
     # Function __doc__ should now use Sphinx style
     func_doc = mod.documented_function.__doc__
-    assert ":param x:" in func_doc, f"Expected :param x: in function __doc__, got:\n{func_doc}"
+    assert ":param x:" in func_doc, (
+        f"Expected :param x: in function __doc__, got:\n{func_doc}"
+    )
     assert ":type x: int" in func_doc
     assert ":returns:" in func_doc
     assert ":rtype: int" in func_doc

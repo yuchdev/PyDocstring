@@ -1,4 +1,5 @@
 """Tests for the CST-based rewriter."""
+
 from pydocstring.rewriter import rewrite_source
 from pydocstring.models import DocstringStyle
 
@@ -163,9 +164,9 @@ def test_rewrite_no_docstring():
     Boundaries: Single function with no docstring; output must equal input exactly.
     On failure, first check: rewrite_source no-op behavior for functions without docstrings.
     """
-    source = '''def foo():
+    source = """def foo():
     pass
-'''
+"""
     result = rewrite_source(source, target_style=DocstringStyle.SPHINX)
     assert result == source
 

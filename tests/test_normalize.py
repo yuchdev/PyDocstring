@@ -1,6 +1,10 @@
 """Tests for normalize module."""
+
 from pydocstring.normalize import (
-    detect_indent, detect_newline, strip_docstring_quotes, wrap_docstring_quotes,
+    detect_indent,
+    detect_newline,
+    strip_docstring_quotes,
+    wrap_docstring_quotes,
 )
 
 

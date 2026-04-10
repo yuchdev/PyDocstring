@@ -1,7 +1,9 @@
 """Tests for data models."""
+
 from pydocstring.models import (
-    DocstringStyle, ParamDoc, RaisesDoc, ReturnsDoc, YieldsDoc,
-    SectionDoc, ParsedDocstring, StyleDetectionResult,
+    DocstringStyle,
+    ParamDoc,
+    ParsedDocstring,
 )
 
 

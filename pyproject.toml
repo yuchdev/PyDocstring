@@ -5,10 +5,18 @@ description = "Convert Python docstrings between Google style and Sphinx style"
 authors = [
     { name = "copilot-swe-agent[bot]", email = "198982749+Copilot@users.noreply.github.com" }
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     "libcst>=1.0.0",
     "click>=8.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.4.0",
+    "mypy>=1.0.0",
 ]
 
 [project.scripts]
@@ -21,6 +29,14 @@ build-backend = "uv_build"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = false
+
+[[tool.mypy.overrides]]
+module = "libcst.*"
+ignore_missing_imports = true
 
 [dependency-groups]
 dev = [

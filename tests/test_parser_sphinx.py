@@ -1,6 +1,6 @@
 """Tests for Sphinx-style docstring parser."""
+
 from pydocstring.parser_sphinx import parse_sphinx
-from pydocstring.models import DocstringStyle
 
 
 def test_parse_empty():

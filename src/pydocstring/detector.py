@@ -1,21 +1,36 @@
 """Heuristic style detection for docstrings."""
+
 from __future__ import annotations
 import re
 from pydocstring.models import DocstringStyle, StyleDetectionResult
 
 GOOGLE_SECTION_HEADERS = {
-    'Args', 'Arguments', 'Parameters', 'Returns', 'Return', 'Yields', 'Yield',
-    'Raises', 'Raise', 'Note', 'Notes', 'Example', 'Examples', 'Warning',
-    'Warnings', 'Todo', 'See Also', 'References', 'Attributes',
+    "Args",
+    "Arguments",
+    "Parameters",
+    "Returns",
+    "Return",
+    "Yields",
+    "Yield",
+    "Raises",
+    "Raise",
+    "Note",
+    "Notes",
+    "Example",
+    "Examples",
+    "Warning",
+    "Warnings",
+    "Todo",
+    "See Also",
+    "References",
+    "Attributes",
 }
 
 SPHINX_FIELD_PATTERN = re.compile(
-    r'^\s*:(param|type|returns?|rtype|raises?|yields?|var|ivar)\b'
+    r"^\s*:(param|type|returns?|rtype|raises?|yields?|var|ivar)\b"
 )
 
-GOOGLE_SECTION_PATTERN = re.compile(
-    r'^(\s*)([A-Z][a-zA-Z ]*?):\s*$'
-)
+GOOGLE_SECTION_PATTERN = re.compile(r"^(\s*)([A-Z][a-zA-Z ]*?):\s*$")
 
 
 def detect_style(text: str) -> StyleDetectionResult:
@@ -27,7 +42,7 @@ def detect_style(text: str) -> StyleDetectionResult:
             evidence=["Empty docstring"],
         )
 
-    lines = text.split('\n')
+    lines = text.split("\n")
     sphinx_count = 0
     google_count = 0
     evidence = []

@@ -24,7 +24,9 @@ class RuleViolation:
     message: str
 
 
-def check_tree(tree: ast.AST, filename: str, source: Optional[str] = None) -> Iterable[RuleViolation]:
+def check_tree(
+    tree: ast.AST, filename: str, source: Optional[str] = None
+) -> Iterable[RuleViolation]:
     """Run all custom checks on a parsed AST."""
     yield from check_bare_except(tree, filename)
     yield from check_broad_except_exception(tree, filename)
@@ -36,6 +38,7 @@ def check_tree(tree: ast.AST, filename: str, source: Optional[str] = None) -> It
     yield from check_percent_formatting(tree, filename)
     yield from check_import_error_suppression(tree, filename)
     yield from check_union_none_annotations(tree, filename)
+
 
 def check_file(path: Path) -> List[RuleViolation]:
     """
@@ -54,6 +57,7 @@ def check_file(path: Path) -> List[RuleViolation]:
 # Helper functions
 # ---------------------------------------------------------------------------
 
+
 def _contains_exception(exc_node: ast.expr) -> bool:
     """Return True if the except type contains `Exception`."""
     # `except Exception:`
@@ -63,8 +67,7 @@ def _contains_exception(exc_node: ast.expr) -> bool:
     # `except (Exception, ValueError):`
     if isinstance(exc_node, ast.Tuple):
         return any(
-            isinstance(elt, ast.Name) and elt.id == "Exception"
-            for elt in exc_node.elts
+            isinstance(elt, ast.Name) and elt.id == "Exception" for elt in exc_node.elts
         )
 
     return False
@@ -99,7 +102,10 @@ def _is_muting_stmt(stmt: ast.stmt) -> bool:
     return False
 
 
-def _has_proper_docstring(node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef, lines: Optional[Sequence[str]]) -> bool:
+def _has_proper_docstring(
+    node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef,
+    lines: Optional[Sequence[str]],
+) -> bool:
     """
     Check that `node` has a docstring as its first statement and that the
     corresponding source line begins with triple double quotes after
@@ -425,9 +431,11 @@ def _expr_is_none(expr: Optional[ast.expr]) -> bool:
 
     return False
 
+
 # ---------------------------------------------------------------------------
 # Linter rules
 # ---------------------------------------------------------------------------
+
 
 def check_bare_except(tree: ast.AST, filename: str) -> Iterable[RuleViolation]:
     """
@@ -449,7 +457,9 @@ def check_bare_except(tree: ast.AST, filename: str) -> Iterable[RuleViolation]:
             )
 
 
-def check_broad_except_exception(tree: ast.AST, filename: str) -> Iterable[RuleViolation]:
+def check_broad_except_exception(
+    tree: ast.AST, filename: str
+) -> Iterable[RuleViolation]:
     """
     Rule 02 (X002):
     Forbid broad `except Exception:`
@@ -509,7 +519,9 @@ def check_muted_exception(tree: ast.AST, filename: str) -> Iterable[RuleViolatio
             )
 
 
-def check_docstrings(tree: ast.AST, filename: str, source: Optional[str]) -> Iterable[RuleViolation]:
+def check_docstrings(
+    tree: ast.AST, filename: str, source: Optional[str]
+) -> Iterable[RuleViolation]:
     """
     Rule 04 (unified X004):
 
@@ -695,7 +707,9 @@ def check_local_imports(tree: ast.AST, filename: str) -> Iterable[RuleViolation]
     return visitor.violations
 
 
-def check_return_type_annotations(tree: ast.AST, filename: str) -> Iterable[RuleViolation]:
+def check_return_type_annotations(
+    tree: ast.AST, filename: str
+) -> Iterable[RuleViolation]:
     """
     Rule 06 (X006):
 
@@ -729,7 +743,9 @@ def check_return_type_annotations(tree: ast.AST, filename: str) -> Iterable[Rule
             )
 
 
-def check_no_none_return_annotations(tree: ast.AST, filename: str) -> Iterable[RuleViolation]:
+def check_no_none_return_annotations(
+    tree: ast.AST, filename: str
+) -> Iterable[RuleViolation]:
     """
     Rule 07 (X007):
 
@@ -749,7 +765,7 @@ def check_no_none_return_annotations(tree: ast.AST, filename: str) -> Iterable[R
                 col_offset=node.col_offset,
                 code="X007",
                 message="Do not use an explicit '-> None' return annotation; "
-                        "omit the return type instead for functions that return nothing.",
+                "omit the return type instead for functions that return nothing.",
             )
 
 
@@ -855,12 +871,14 @@ def check_percent_formatting(tree: ast.AST, filename: str) -> Iterable[RuleViola
                 message=(
                     "Do not use old-style '%' formatting in logging calls "
                     "(e.g. '... %s', '... %d'); use f-strings instead, "
-                    "e.g. logger.info(f\"... {value}\")."
+                    'e.g. logger.info(f"... {value}").'
                 ),
             )
 
 
-def check_import_error_suppression(tree: ast.AST, filename: str) -> Iterable[RuleViolation]:
+def check_import_error_suppression(
+    tree: ast.AST, filename: str
+) -> Iterable[RuleViolation]:
     """
     Rule 09 (X009):
 
@@ -899,7 +917,10 @@ def check_import_error_suppression(tree: ast.AST, filename: str) -> Iterable[Rul
             )
 
 
-def check_union_none_annotations(tree: ast.AST, filename: str,) -> Iterable[RuleViolation]:
+def check_union_none_annotations(
+    tree: ast.AST,
+    filename: str,
+) -> Iterable[RuleViolation]:
     """
     Rule 10 (X010):
 

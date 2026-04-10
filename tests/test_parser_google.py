@@ -1,6 +1,6 @@
 """Tests for Google-style docstring parser."""
+
 from pydocstring.parser_google import parse_google
-from pydocstring.models import DocstringStyle
 
 
 def test_parse_empty():
