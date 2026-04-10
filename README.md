@@ -19,6 +19,7 @@
 - Concatenated string docstrings (`"part1" "part2"`) are left unchanged.
 - Formatted strings (`f"..."`) used as docstrings are left unchanged.
 - Very complex mixed styles may not round-trip perfectly; always review diffs before committing.
+- **Strip bodies:** The `tools/strip_function_bodies.py` utility can iterate through Python files and strip function/method bodies, leaving only the docstrings and `pass`. This is useful for generating large amounts of test assets from production code.
 
 ---
 
