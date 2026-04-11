@@ -8,10 +8,10 @@
 
 ## Supported Docstring Styles
 
-| Style   | Example |
-|---------|---------|
-| Google  | `Args:`, `Returns:`, `Raises:`, `Yields:` sections with indented content |
-| Sphinx  | `:param name:`, `:type name:`, `:returns:`, `:rtype:`, `:raises ExcType:` field lists |
+| Style  | Example                                                                               |
+|--------|---------------------------------------------------------------------------------------|
+| Google | `Args:`, `Returns:`, `Raises:`, `Yields:` sections with indented content              |
+| Sphinx | `:param name:`, `:type name:`, `:returns:`, `:rtype:`, `:raises ExcType:` field lists |
 
 ## Limitations
 

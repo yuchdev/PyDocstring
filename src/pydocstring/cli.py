@@ -23,9 +23,7 @@ def _existing_dir(path_str: str) -> Path:
     """Argparse type: ensure path exists and is a directory, return Path."""
     p = Path(path_str)
     if not p.exists() or not p.is_dir():
-        raise argparse.ArgumentTypeError(
-            f"Path does not exist or is not a directory: {path_str}"
-        )
+        raise argparse.ArgumentTypeError(f"Path does not exist or is not a directory: {path_str}")
     return p
 
 
@@ -135,6 +133,18 @@ def _build_parser() -> argparse.ArgumentParser:
         default=1,
         help="Starting index for --rename-pattern numbering (default: 1)",
     )
+    strip_parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Show each file processed",
+    )
+    strip_parser.add_argument(
+        "-q",
+        "--quiet",
+        action="store_true",
+        help="Suppress output except errors",
+    )
 
     return parser
 
@@ -238,6 +248,8 @@ def _cmd_strip(
     dry_run: bool,
     rename_pattern: Optional[str],
     start_index: int,
+    verbose: bool,
+    quiet: bool,
 ) -> int:
     """Run strip command; return exit code."""
     result = strip_paths(
@@ -247,14 +259,26 @@ def _cmd_strip(
         start_index=start_index,
     )
 
-    if dry_run:
-        print(f"Files that would change: {result.files_changed}")
-        if rename_pattern:
-            print(f"Files that would be renamed: {result.files_renamed}")
-    else:
-        print(f"Files changed: {result.files_changed}")
-        if rename_pattern:
-            print(f"Files renamed: {result.files_renamed}")
+    if not quiet:
+        for fr in result.file_results:
+            status = []
+            if fr.changed:
+                status.append("stripped")
+            if fr.renamed:
+                status.append(f"renamed to {fr.path.name}")
+            
+            if status:
+                label = "Would change" if dry_run else "Changed"
+                if verbose or fr.changed or fr.renamed:
+                    print(f"{label}: {fr.original_path} ({', '.join(status)})")
+            elif verbose:
+                print(f"Unchanged: {fr.original_path}")
+
+        print(
+            f"\nProcessed {result.files_processed} files:\n"
+            f"  - Content stripped: {result.files_changed}\n"
+            f"  - Files renamed:    {result.files_renamed}"
+        )
 
     return 0
 
@@ -284,6 +308,8 @@ def main(argv: Optional[list[str]] = None) -> int:
             dry_run=args.dry_run,
             rename_pattern=args.rename_pattern,
             start_index=args.start_index,
+            verbose=args.verbose,
+            quiet=args.quiet,
         )
     else:
         # Default to old behavior if no command (for backward compatibility if possible)
