@@ -3,8 +3,10 @@ def hello(name: str):
     print(f"Hello, {name}!")
     return True
 
+
 class Calculator:
     """A simple calculator."""
+
     def add(self, a: int, b: int) -> int:
         """Add two numbers."""
         return a + b
