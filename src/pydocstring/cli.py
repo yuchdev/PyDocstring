@@ -8,6 +8,15 @@ import difflib
 from pathlib import Path
 from typing import Optional
 from pydocstring.converter import convert_project
+from pydocstring.strip import strip_paths
+
+
+def _existing_path(path_str: str) -> Path:
+    """Argparse type: ensure path exists, return Path."""
+    p = Path(path_str)
+    if not p.exists():
+        raise argparse.ArgumentTypeError(f"Path does not exist: {path_str}")
+    return p
 
 
 def _existing_dir(path_str: str) -> Path:
@@ -23,42 +32,48 @@ def _existing_dir(path_str: str) -> Path:
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="pydocstring",
-        description="PyDocstring - Convert Python docstrings between Google and Sphinx styles.",
+        description="PyDocstring - Convert docstrings or strip function bodies.",
     )
 
-    parser.add_argument(
+    subparsers = parser.add_subparsers(dest="command", help="Command to run")
+
+    # Convert command
+    convert_parser = subparsers.add_parser(
+        "convert", help="Convert docstrings between styles"
+    )
+    convert_parser.add_argument(
         "project_root", type=_existing_dir, help="Project root directory"
     )
-    parser.add_argument(
+    convert_parser.add_argument(
         "--to",
         dest="target_style",
         choices=["google", "sphinx"],
         required=True,
         help="Target docstring style",
     )
-    parser.add_argument(
+    convert_parser.add_argument(
         "--from",
         dest="source_style",
         choices=["google", "sphinx", "auto"],
         default="auto",
         help="Source docstring style (default: auto-detect)",
     )
-    parser.add_argument(
+    convert_parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Don't write files, just show what would change",
     )
-    parser.add_argument(
+    convert_parser.add_argument(
         "--check",
         action="store_true",
         help="Exit with code 1 if any file would change",
     )
-    parser.add_argument(
+    convert_parser.add_argument(
         "--diff",
         action="store_true",
         help="Print unified diffs without writing",
     )
-    parser.add_argument(
+    convert_parser.add_argument(
         "--include",
         dest="include_globs",
         metavar="GLOB",
@@ -66,7 +81,7 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Include files matching glob pattern (can be repeated)",
     )
-    parser.add_argument(
+    convert_parser.add_argument(
         "--exclude",
         dest="exclude_globs",
         metavar="GLOB",
@@ -74,24 +89,51 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Exclude files matching glob pattern (can be repeated)",
     )
-    parser.add_argument(
+    convert_parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
         help="Show each file processed",
     )
-    parser.add_argument(
+    convert_parser.add_argument(
         "-q",
         "--quiet",
         action="store_true",
         help="Suppress output except errors",
     )
-    parser.add_argument(
+    convert_parser.add_argument(
         "--json-report",
         dest="json_report",
         type=Path,
         default=None,
         help="Write JSON report to file",
+    )
+
+    # Strip command
+    strip_parser = subparsers.add_parser(
+        "strip",
+        help="Strip function bodies leaving only docstrings and 'pass'",
+    )
+    strip_parser.add_argument(
+        "paths",
+        nargs="+",
+        type=_existing_path,
+        help="File(s) or directory path(s) to process",
+    )
+    strip_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Don't write files, just show what would change",
+    )
+    strip_parser.add_argument(
+        "--rename-pattern",
+        help="Optional output name pattern, e.g. 'test_sphinx_doc_{NNN}.py'",
+    )
+    strip_parser.add_argument(
+        "--start-index",
+        type=int,
+        default=1,
+        help="Starting index for --rename-pattern numbering (default: 1)",
     )
 
     return parser
@@ -191,24 +233,69 @@ def _cmd_convert(
     return 0
 
 
+def _cmd_strip(
+    paths: list[Path],
+    dry_run: bool,
+    rename_pattern: Optional[str],
+    start_index: int,
+) -> int:
+    """Run strip command; return exit code."""
+    result = strip_paths(
+        paths=paths,
+        dry_run=dry_run,
+        rename_pattern=rename_pattern,
+        start_index=start_index,
+    )
+
+    if dry_run:
+        print(f"Files that would change: {result.files_changed}")
+        if rename_pattern:
+            print(f"Files that would be renamed: {result.files_renamed}")
+    else:
+        print(f"Files changed: {result.files_changed}")
+        if rename_pattern:
+            print(f"Files renamed: {result.files_renamed}")
+
+    return 0
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     """Console script entry point for pydocstring."""
     parser = _build_parser()
     args = parser.parse_args(argv)
 
-    return _cmd_convert(
-        project_root=args.project_root,
-        target_style=args.target_style,
-        source_style=args.source_style,
-        dry_run=args.dry_run,
-        check=args.check,
-        diff=args.diff,
-        include_globs=args.include_globs,
-        exclude_globs=args.exclude_globs,
-        verbose=args.verbose,
-        quiet=args.quiet,
-        json_report=args.json_report,
-    )
+    if args.command == "convert":
+        return _cmd_convert(
+            project_root=args.project_root,
+            target_style=args.target_style,
+            source_style=args.source_style,
+            dry_run=args.dry_run,
+            check=args.check,
+            diff=args.diff,
+            include_globs=args.include_globs,
+            exclude_globs=args.exclude_globs,
+            verbose=args.verbose,
+            quiet=args.quiet,
+            json_report=args.json_report,
+        )
+    elif args.command == "strip":
+        return _cmd_strip(
+            paths=args.paths,
+            dry_run=args.dry_run,
+            rename_pattern=args.rename_pattern,
+            start_index=args.start_index,
+        )
+    else:
+        # Default to old behavior if no command (for backward compatibility if possible)
+        # But project_root was positional, so it might conflict.
+        # Actually, without subcommands, it was: pydocstring PROJECT_ROOT --to STYLE
+        # Now it is: pydocstring convert PROJECT_ROOT --to STYLE
+        # This IS a breaking change.
+        # If I want to preserve backward compatibility, I need to handle the case where
+        # no command is provided but project_root is.
+        # However, argparse with subparsers usually requires a command.
+        parser.print_help()
+        return 1
 
 
 if __name__ == "__main__":  # pragma: no cover

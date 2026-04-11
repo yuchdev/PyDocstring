@@ -19,7 +19,7 @@
 - Concatenated string docstrings (`"part1" "part2"`) are left unchanged.
 - Formatted strings (`f"..."`) used as docstrings are left unchanged.
 - Very complex mixed styles may not round-trip perfectly; always review diffs before committing.
-- **Strip bodies:** The `tools/strip_function_bodies.py` utility can iterate through Python files and strip function/method bodies, leaving only the docstrings and `pass`. This is useful for generating large amounts of test assets from production code.
+- **Strip bodies:** The `pydocstring strip` command can iterate through Python files and strip function/method bodies, leaving only the docstrings and `pass`. This is useful for generating large amounts of test assets from production code.
 
 ---
 
@@ -40,36 +40,51 @@ uv add pydocstring
 
 ## CLI Examples
 
+### Docstring Conversion
+
 ```bash
 # Convert a project from Google to Sphinx style (in-place)
-pydocstring /path/to/myproject --to sphinx
+pydocstring convert /path/to/myproject --to sphinx
 
 # Convert from Sphinx to Google style (in-place)
-pydocstring /path/to/myproject --to google
+pydocstring convert /path/to/myproject --to google
 
 # Dry-run: show what would change without writing
-pydocstring /path/to/myproject --to sphinx --dry-run
+pydocstring convert /path/to/myproject --to sphinx --dry-run
 
 # Check mode: exit 1 if any file needs conversion
-pydocstring /path/to/myproject --to sphinx --check
+pydocstring convert /path/to/myproject --to sphinx --check
 
 # Diff mode: show unified diffs
-pydocstring /path/to/myproject --to sphinx --diff
+pydocstring convert /path/to/myproject --to sphinx --diff
 
 # Verbose output
-pydocstring /path/to/myproject --to sphinx --verbose
+pydocstring convert /path/to/myproject --to sphinx --verbose
 
 # Exclude files matching a glob
-pydocstring /path/to/myproject --to sphinx --exclude "tests/**"
+pydocstring convert /path/to/myproject --to sphinx --exclude "tests/**"
 
 # Include only specific files
-pydocstring /path/to/myproject --to sphinx --include "src/**"
+pydocstring convert /path/to/myproject --to sphinx --include "src/**"
 
 # Override source style detection
-pydocstring /path/to/myproject --to sphinx --from google
+pydocstring convert /path/to/myproject --to sphinx --from google
 
 # Save a JSON report
-pydocstring /path/to/myproject --to sphinx --json-report report.json
+pydocstring convert /path/to/myproject --to sphinx --json-report report.json
+```
+
+### Body Stripping
+
+```bash
+# Strip function bodies in-place
+pydocstring strip /path/to/myproject
+
+# Strip bodies and rename files by pattern (e.g. for generating test assets)
+pydocstring strip /path/to/myproject --rename-pattern "test_doc_{NNN}.py" --start-index 1
+
+# Dry-run: show which files would be rewritten
+pydocstring strip /path/to/myproject --dry-run
 ```
 
 ---

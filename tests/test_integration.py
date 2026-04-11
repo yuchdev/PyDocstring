@@ -307,14 +307,7 @@ def test_fixture_strip_matches_expected(tmp_path):
     Boundaries: Fixture project with known input/expected output; converted files must match byte-for-byte.
     On failure, first check: fixture files in tests/fixtures/projects/strip/basic_project and strip_function_bodies logic.
     """
-    # Import strip_tool from tools/strip_function_bodies.py
-    tool_path = PROJECT_ROOT / "tools" / "strip_function_bodies.py"
-    module_name = "strip_tool_int"
-    spec = importlib.util.spec_from_file_location(module_name, tool_path)
-    strip_tool = importlib.util.module_from_spec(spec)
-    assert spec and spec.loader
-    sys.modules[module_name] = strip_tool
-    spec.loader.exec_module(strip_tool)
+    from pydocstring.strip import strip_paths
 
     fixture_dir = FIXTURES_DIR / "strip" / "basic_project"
     input_dir = fixture_dir / "input"
@@ -323,15 +316,15 @@ def test_fixture_strip_matches_expected(tmp_path):
     work_dir = tmp_path / "work"
     shutil.copytree(input_dir, work_dir)
 
-    # Use rewrite_paths to process the directory
-    result = strip_tool.rewrite_paths([work_dir])
-    assert result.changed_files >= 1
+    # Use strip_paths to process the directory
+    result = strip_paths([work_dir])
+    assert result.files_changed >= 1
 
     for expected_file in expected_dir.glob("*.py"):
         work_file = work_dir / expected_file.name
         assert work_file.exists()
-        # strip_tool might use different line endings or slightly different formatting,
-        # but our expected file should match exactly what strip_tool produces.
+        # strip_paths might use different line endings or slightly different formatting,
+        # but our expected file should match exactly what strip_paths produces.
         assert work_file.read_text() == expected_file.read_text(), (
             f"Stripped {expected_file.name} does not match expected output"
         )

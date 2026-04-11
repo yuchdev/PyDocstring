@@ -9,12 +9,12 @@ uv tool install pydocstring
 
 ## Commands
 
-### `pydocstring`
+### `pydocstring convert`
 
 Convert docstrings in a Python project.
 
 ```
-pydocstring PROJECT_ROOT --to {google,sphinx} [OPTIONS]
+pydocstring convert PROJECT_ROOT --to {google,sphinx} [OPTIONS]
 ```
 
 **Required arguments:**
@@ -38,6 +38,28 @@ pydocstring PROJECT_ROOT --to {google,sphinx} [OPTIONS]
 | `--quiet, -q` | Suppress all output except errors |
 | `--json-report PATH` | Write JSON summary to file |
 
+### `pydocstring strip`
+
+Strip function/method bodies, leaving only docstrings and `pass`.
+
+```
+pydocstring strip PATHS [OPTIONS]
+```
+
+**Required arguments:**
+
+| Argument | Description |
+|---|---|
+| `PATHS` | One or more file or directory paths to process |
+
+**Options:**
+
+| Option | Description |
+|---|---|
+| `--dry-run` | Show what would change without writing files |
+| `--rename-pattern PATTERN` | Optional output name pattern, e.g. 'test_doc_{NNN}.py' |
+| `--start-index INDEX` | Starting index for numbering (default: 1) |
+
 ## Exit Codes
 
 | Code | Meaning |
@@ -51,46 +73,56 @@ pydocstring PROJECT_ROOT --to {google,sphinx} [OPTIONS]
 
 ```bash
 # Convert Google → Sphinx
-pydocstring ./myproject --to sphinx
+pydocstring convert ./myproject --to sphinx
 
 # Convert Sphinx → Google
-pydocstring ./myproject --to google
+pydocstring convert ./myproject --to google
 ```
 
 ### Safe workflows (inspect before writing)
 
 ```bash
 # View diffs only
-pydocstring ./myproject --to sphinx --diff
+pydocstring convert ./myproject --to sphinx --diff
 
 # Dry-run with verbose output
-pydocstring ./myproject --to sphinx --dry-run --verbose
+pydocstring convert ./myproject --to sphinx --dry-run --verbose
 ```
 
 ### CI enforcement
 
 ```bash
 # Fail if project is not using Sphinx style
-pydocstring . --to sphinx --check
+pydocstring convert . --to sphinx --check
 ```
 
 ### Selective processing
 
 ```bash
 # Only convert files in src/
-pydocstring . --to sphinx --include "src/**/*.py"
+pydocstring convert . --to sphinx --include "src/**/*.py"
 
 # Skip test files
-pydocstring . --to sphinx --exclude "tests/**"
+pydocstring convert . --to sphinx --exclude "tests/**"
 
 # Skip vendored code
-pydocstring . --to sphinx --exclude "vendor/**" --exclude "third_party/**"
+pydocstring convert . --to sphinx --exclude "vendor/**" --exclude "third_party/**"
 ```
 
 ### JSON report
 
 ```bash
-pydocstring . --to sphinx --json-report conversion_report.json
+pydocstring convert . --to sphinx --json-report conversion_report.json
+```
+
+### Body Stripping
+
+```bash
+# Strip bodies in-place
+pydocstring strip ./myproject
+
+# Strip bodies and rename files
+pydocstring strip ./myproject --rename-pattern "test_doc_{NNN}.py"
 ```
 
 The JSON report has the structure:
