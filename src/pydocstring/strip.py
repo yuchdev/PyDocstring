@@ -110,11 +110,15 @@ def strip_function_bodies(source: str) -> str:
         new_body_lines: list[str] = []
         if _is_docstring_stmt(first_stmt):
             new_body_lines.append(_source_segment(source, line_starts, first_stmt))
-
-        new_body_lines.append(f"{indent}pass")
+            new_body_lines.append(f"{indent}pass")
+        else:
+            new_body_lines.append("pass")
+        
         replacement = "\n".join(new_body_lines)
 
-        edits.append(Edit(start=body_start, end=body_end, replacement=replacement))
+        current_body = source[body_start:body_end]
+        if current_body != replacement:
+            edits.append(Edit(start=body_start, end=body_end, replacement=replacement))
 
     updated = source
     for edit in sorted(edits, key=lambda e: e.start, reverse=True):
